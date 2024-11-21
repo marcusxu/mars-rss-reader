@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Mars RSS Reader Logo" width="200">
+</p>
+
 # Mars RSS Reader
 
 A robust RSS Reader API built with NestJS framework. This service allows users to fetch and parse RSS feeds efficiently.
