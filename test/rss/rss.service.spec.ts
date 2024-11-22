@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RssService } from './rss.service';
+import { RssService } from '../../src/rss/rss.service';
 
 describe('RssService', () => {
   let service: RssService;
