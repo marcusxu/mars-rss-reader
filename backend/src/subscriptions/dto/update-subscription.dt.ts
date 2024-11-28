@@ -1,20 +1,21 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsUrl, IsString, IsOptional } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, IsUrl } from 'class-validator';
+import { BaseSubscriptionDto } from './base-subscription.dto';
 
-export class BaseSubscriptionDto {
-  @IsNotEmpty()
+export class UpdateSubscriptionDto implements Partial<BaseSubscriptionDto> {
   @IsUrl()
-  @ApiProperty({
+  @IsOptional()
+  @ApiPropertyOptional({
     description: 'Valid RSS feed URL',
   })
-  url: string;
+  ur?: string;
 
-  @IsNotEmpty()
   @IsString()
-  @ApiProperty({
+  @IsOptional()
+  @ApiPropertyOptional({
     description: 'Name of the subscription',
   })
-  name: string;
+  name?: string;
 
   @IsString()
   @IsOptional()

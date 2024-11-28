@@ -11,7 +11,6 @@ async function bootstrap() {
     .setTitle('RSS Reader API')
     .setDescription('The RSS Reader API description')
     .setVersion('1.0')
-    .addTag('rss')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

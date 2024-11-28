@@ -12,7 +12,7 @@ import { ArticlesModule } from './articles/articles.module';
       type: 'sqlite',
       database: 'mars_rss_reader.sqlite',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // 仅在开发环境使用
+      synchronize: true, // Only for dev env
     }),
     SubscriptionsModule,
     FeedsModule,

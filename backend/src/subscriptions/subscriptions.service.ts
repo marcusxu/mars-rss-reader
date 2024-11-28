@@ -1,14 +1,18 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { Subscription } from './entities/subscription.entity';
-import { BaseSubscriptionDto } from './dto/base-subscription.dto';
+import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { UpdateSubscriptionDto } from './dto/update-subscription.dt';
+import { SubscriptionResponseDto } from './dto/subscription-response.dto';
+import { FindSubscriptionDto } from './dto/find-subscription.dto';
+import { PaginationResponseDto } from 'src/common/pagination/pagination-response.dto';
+import { PaginationRequestDto } from 'src/common/pagination/pagination-request.dto';
 
 @Injectable()
 export class SubscriptionsService {
@@ -20,13 +24,9 @@ export class SubscriptionsService {
   ) {}
 
   async create(
-    createSubscriptionDto: BaseSubscriptionDto,
-  ): Promise<Subscription> {
+    createSubscriptionDto: CreateSubscriptionDto,
+  ): Promise<SubscriptionResponseDto> {
     this.logger.log(`Attempting to create a new subscription`);
-    if (!createSubscriptionDto.url) {
-      this.logger.warn(`Invalid subscription data: no URL`);
-      throw new BadRequestException('Invalid subscription data');
-    }
     const existingSubscription = await this.subscriptionsRepository.findOne({
       where: { url: createSubscriptionDto.url },
     });
@@ -43,7 +43,7 @@ export class SubscriptionsService {
     );
     await this.subscriptionsRepository.save(newSubscription);
     this.logger.log(`Created new subscription with ID: ${newSubscription.id}`);
-    return newSubscription;
+    return this.mapToResponseDto(newSubscription);
   }
 
   async remove(id: string): Promise<void> {
@@ -58,8 +58,8 @@ export class SubscriptionsService {
 
   async update(
     id: string,
-    updateSubscriptionDto: BaseSubscriptionDto,
-  ): Promise<Subscription> {
+    updateSubscriptionDto: UpdateSubscriptionDto,
+  ): Promise<SubscriptionResponseDto> {
     this.logger.log(`Attempting to update subscription: ${id}`);
     const subscription = await this.subscriptionsRepository.findOne({
       where: { id },
@@ -72,26 +72,59 @@ export class SubscriptionsService {
     const updatedSubscription =
       await this.subscriptionsRepository.save(subscription);
     this.logger.log(`Successfully updated subscription: ${id}`);
-    return updatedSubscription;
+    return this.mapToResponseDto(updatedSubscription);
   }
 
-  async find(query: Partial<Subscription>): Promise<Subscription[]> {
-    this.logger.log(
-      `Attempting to find subscription: ${JSON.stringify(query)}`,
-    );
+  async find(
+    findSubscriptionDto: FindSubscriptionDto,
+  ): Promise<PaginationResponseDto<Subscription>> {
+    const page = findSubscriptionDto?.page || 1;
+    const perPage = findSubscriptionDto?.perPage || 10;
 
-    const subscriptions = await this.subscriptionsRepository.find({
-      where: query,
-    });
+    this.logger.log(
+      `Attempting to find subscription: ${JSON.stringify(findSubscriptionDto)}, page: ${page}, perPage: ${perPage}`,
+    );
+    const where: FindOptionsWhere<Subscription> = {};
+    if (findSubscriptionDto.id) where.id = findSubscriptionDto.id;
+    if (findSubscriptionDto.category)
+      where.category = findSubscriptionDto.category;
+    if (findSubscriptionDto.description)
+      where.description = ILike(`%${findSubscriptionDto.description}%`);
+    if (findSubscriptionDto.name)
+      where.name = ILike(`%${findSubscriptionDto.name}%`);
+
+    const [subscriptions, total] =
+      await this.subscriptionsRepository.findAndCount({
+        where: where,
+        skip: (page - 1) * perPage,
+        take: perPage,
+        order: { createdAt: 'DESC' },
+      });
     if (subscriptions?.length === 0) {
       this.logger.warn(
-        `No subscriptions found matching the criteria: ${JSON.stringify(query)}`,
+        `No subscriptions found matching the criteria: ${JSON.stringify(findSubscriptionDto)}`,
       );
       throw new NotFoundException(
         'No subscriptions found matching the criteria',
       );
     }
 
-    return subscriptions;
+    const paginatedSubscriptions = new PaginationResponseDto<Subscription>(
+      page,
+      perPage,
+      total,
+      subscriptions,
+    );
+    return paginatedSubscriptions;
+  }
+
+  private mapToResponseDto(
+    subscription: Subscription,
+  ): SubscriptionResponseDto {
+    const responseDto = new SubscriptionResponseDto();
+    Object.assign(responseDto, subscription);
+    responseDto.createdAt = subscription.createdAt.toDateString();
+    responseDto.updatedAt = subscription.updatedAt.toDateString();
+    return responseDto;
   }
 }
