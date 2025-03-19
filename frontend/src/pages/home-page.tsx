@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getArticles } from '../services/article-service';
+import {
+  cleanupAllFeeds,
+  getArticles,
+  refreshAllFeeds,
+} from '../services/article-service';
 
 interface Article {
   id: string;
@@ -20,21 +24,27 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        setLoading(true);
-        const response = await getArticles();
-        setArticles(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to fetch articles');
-        setLoading(false);
-      }
-    };
+  const fetchArticles = async () => {
+    setLoading(true);
+    const response = await getArticles();
+    setArticles(response.data);
+    setError(null);
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchArticles();
   }, []);
+
+  const handleRefresh = async () => {
+    await refreshAllFeeds();
+    await fetchArticles();
+  };
+
+  const handleCleanup = async () => {
+    await cleanupAllFeeds();
+    await fetchArticles();
+  };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -42,6 +52,8 @@ export function HomePage() {
   return (
     <div>
       <h1>Mars RSS Reader</h1>
+      <button onClick={handleRefresh}>Refresh</button>
+      <button onClick={handleCleanup}>Cleanup</button>
       <ul>
         {articles.map((article) => (
           <li key={article.id}>

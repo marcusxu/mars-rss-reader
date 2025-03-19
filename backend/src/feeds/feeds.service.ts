@@ -34,13 +34,41 @@ export class FeedsService {
     return this.mapToResponseDto(subscriptionId, savedArticles.length);
   }
 
+  async updateAll(): Promise<FeedResponseDto> {
+    this.logger.log(`Attempting to update articles for all subscriptions`);
+    const subscriptions = await this.subscriptionsRepository.find();
+    let updatedCount = 0;
+    for (const subscription of subscriptions) {
+      const updateResponse = await this.update(subscription.id);
+      updatedCount += updateResponse.articlesCount;
+    }
+    this.logger.log(
+      `Successfully updated ${updatedCount} articles for all subscriptions`,
+    );
+    return this.mapToResponseDto(null, updatedCount);
+  }
+
+  async cleanupAll(): Promise<FeedResponseDto> {
+    this.logger.log(`Attempting to cleanup articles for all subscriptions`);
+    const subscriptions = await this.subscriptionsRepository.find();
+    let deletedCount = 0;
+    for (const subscription of subscriptions) {
+      const cleanupResponse = await this.cleanupArticles(subscription.id);
+      deletedCount += cleanupResponse.articlesCount;
+    }
+    this.logger.log(
+      `Successfully deleted ${deletedCount} articles for all subscriptions`,
+    );
+    return this.mapToResponseDto(null, deletedCount);
+  }
+
   private async fetchArticles(url: string): Promise<any> {
     const response = await axios.get(url);
     return await this.parser.parseString(response.data);
   }
 
   private async saveArticles(articles: Article[]): Promise<Article[]> {
-    this.logger.log(`Attempting to save articles: ${articles}`);
+    this.logger.log(`Attempting to save articles: ${JSON.stringify(articles)}`);
     const savedArticles: Article[] = [];
     for (const article of articles) {
       const existingArticle = await this.articlesRepository.findOne({

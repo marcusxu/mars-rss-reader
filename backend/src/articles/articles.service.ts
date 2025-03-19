@@ -72,12 +72,6 @@ export class ArticlesService {
       take: perPage,
       order: { createdAt: 'DESC' },
     });
-    if (articles?.length === 0) {
-      this.logger.warn(
-        `No articles found matching the criteria: ${JSON.stringify(findArticleDto)}`,
-      );
-      throw new NotFoundException('No articles found matching the criteria');
-    }
 
     const paginatedArticles = new PaginationResponseDto<Article>(
       page,

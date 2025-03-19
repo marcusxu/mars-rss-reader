@@ -1,12 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class FeedResponseDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Subscription ID',
   })
   @IsString()
-  subscriptionId: string;
+  @IsOptional()
+  subscriptionId?: string;
 
   @ApiProperty({ description: 'Updated Date' })
   @IsString()

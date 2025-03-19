@@ -7,7 +7,7 @@
         "shared"
     ],
     "scripts": {
-        "start": "npm-run-all --parallel start:frontend start:backend",
+        "start": "npm-run-all --parallel start:frontend start:backend:dev",
         "start:frontend": "cd frontend &&PORT=3001 npm run dev",
         "start:backend": "cd backend && npm run start",
         "start:backend:dev": "cd backend && npm run start:dev",

@@ -13,18 +13,30 @@ export class FeedsController {
   @Patch('update/:id')
   @ApiOperation({ summary: 'Update articles for a subscription' })
   @ApiParam({ name: 'id', description: 'Subscription ID' })
-  async updateSubscriptionArticles(
-    @Param('id') id: string,
-  ): Promise<FeedResponseDto> {
+  async updateFeedForSub(@Param('id') id: string): Promise<FeedResponseDto> {
     this.logger.log(`Attempting to update articles for subscription: ${id}`);
     return await this.feedsService.update(id);
   }
 
   @Patch('cleanup/:id')
-  @ApiOperation({ summary: 'Delete a subscription' })
+  @ApiOperation({ summary: 'Cleanup articles for a subscription' })
   @ApiParam({ name: 'id', description: 'Subscription ID' })
-  async removeSubscription(@Param('id') id: string): Promise<FeedResponseDto> {
+  async cleanupFeedForSub(@Param('id') id: string): Promise<FeedResponseDto> {
     this.logger.log(`Attempting to delete subscription: ${id}`);
     return await this.feedsService.cleanupArticles(id);
+  }
+
+  @Patch('update-all')
+  @ApiOperation({ summary: 'Update articles for all subscriptions' })
+  async updateFeedForAll(): Promise<FeedResponseDto> {
+    this.logger.log('Attempting to update articles for all subscriptions');
+    return await this.feedsService.updateAll();
+  }
+
+  @Patch('cleanup-all')
+  @ApiOperation({ summary: 'Cleanup articles for all subscriptions' })
+  async cleanupFeedForAll(): Promise<FeedResponseDto> {
+    this.logger.log(`Attempting to delete subscription for all subscriptions`);
+    return await this.feedsService.cleanupAll();
   }
 }
