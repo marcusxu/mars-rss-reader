@@ -27,9 +27,9 @@ interface Article {
   updatedAt: string;
 }
 
-export const getArticles = async () => {
+export const getArticles = async (page: number = 1, perPage: number = 10) => {
   const response = await axios.get<ArticleResponse>(
-    'http://localhost:3000/articles',
+    `http://localhost:3000/articles?page=${page}&perPage=${perPage}`,
   );
   return response.data;
 };

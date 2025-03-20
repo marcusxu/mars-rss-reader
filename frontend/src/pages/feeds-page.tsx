@@ -7,11 +7,14 @@ import {
 import {
   Box,
   Chip,
+  CircularProgress,
   Container,
   Fab,
   Link,
   List,
   ListItem,
+  Pagination,
+  Stack,
   Typography,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -40,7 +43,6 @@ interface Article {
   };
 }
 
-// TODO: Add pagination
 // TODO: Add status of a feed
 // TODO: Add filtering
 // TODO: Add marking as read
@@ -53,30 +55,46 @@ export function FeedsPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const fetchArticles = async () => {
-    setLoading(true);
-    const response = await getArticles();
-    setArticles(response.data);
-    setError(null);
-    setLoading(false);
-  };
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    fetchArticles();
+    updateArticles();
   }, []);
 
+  const updateArticles = async (
+    event?: React.ChangeEvent<unknown>,
+    newPage?: number,
+  ) => {
+    setLoading(true);
+    const response = await getArticles(newPage | 1);
+    setArticles(response.data);
+    setCurrentPage(response.page);
+    setTotalPages(Math.ceil(response.total / response.perPage));
+    setLoading(false);
+  };
   const handleRefresh = async () => {
+    setLoading(true);
     await refreshAllFeeds();
-    await fetchArticles();
+    await updateArticles();
   };
-
   const handleCleanup = async () => {
+    setLoading(true);
     await cleanupAllFeeds();
-    await fetchArticles();
+    await updateArticles();
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading)
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
   if (error) return <div>Error: {error}</div>;
 
   return (
@@ -95,6 +113,13 @@ export function FeedsPage() {
           </ListItem>
         ))}
       </List>
+      <Stack spacing={2}>
+        <Pagination
+          count={totalPages}
+          page={currentPage}
+          onChange={updateArticles}
+        />
+      </Stack>
       <Box
         sx={{
           position: 'fixed',
