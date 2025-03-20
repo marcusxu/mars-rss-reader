@@ -4,17 +4,18 @@ import {
   getArticles,
   refreshAllFeeds,
 } from '../services/article-service';
-import Button from '@mui/material/Button';
 import {
   Box,
-  ButtonGroup,
   Chip,
+  Container,
+  Fab,
   Link,
   List,
   ListItem,
   Typography,
 } from '@mui/material';
-import { Refresh } from '@mui/icons-material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 
 interface Article {
   id: string;
@@ -79,13 +80,7 @@ export function FeedsPage() {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <Box>
-      <ButtonGroup size="small">
-        <Button onClick={handleRefresh} startIcon={<Refresh />}>
-          Refresh
-        </Button>
-        <Button onClick={handleCleanup}>Cleanup</Button>
-      </ButtonGroup>
+    <Container>
       <List>
         {articles.map((article) => (
           <ListItem key={article.id}>
@@ -100,6 +95,32 @@ export function FeedsPage() {
           </ListItem>
         ))}
       </List>
-    </Box>
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          display: 'flex',
+          gap: 2,
+        }}
+      >
+        <Fab
+          onClick={handleRefresh}
+          variant="extended"
+          size="small"
+          color="primary"
+        >
+          <RefreshIcon /> Refresh
+        </Fab>
+        <Fab
+          onClick={handleCleanup}
+          variant="extended"
+          size="small"
+          color="secondary"
+        >
+          <CleaningServicesIcon /> Cleanup
+        </Fab>
+      </Box>
+    </Container>
   );
 }
