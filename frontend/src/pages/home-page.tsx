@@ -4,6 +4,16 @@ import {
   getArticles,
   refreshAllFeeds,
 } from '../services/article-service';
+import Button from '@mui/material/Button';
+import {
+  Box,
+  ButtonGroup,
+  Link,
+  List,
+  ListItem,
+  Typography,
+} from '@mui/material';
+import { Refresh } from '@mui/icons-material';
 
 interface Article {
   id: string;
@@ -18,6 +28,15 @@ interface Article {
   createdAt: string;
   updatedAt: string;
 }
+
+// TODO: Add pagination
+// TODO: Add status of a feed
+// TODO: Add filtering
+// TODO: Add marking as read
+// TODO: Add marking as favorite
+// TODO: Add marking as unread
+// TODO: Add marking as unfavorite
+// TODO: Add marking as all read
 
 export function HomePage() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -50,17 +69,24 @@ export function HomePage() {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div>
-      <h1>Mars RSS Reader</h1>
-      <button onClick={handleRefresh}>Refresh</button>
-      <button onClick={handleCleanup}>Cleanup</button>
-      <ul>
+    <Box>
+      <Typography variant="h6">Feeds</Typography>
+      <ButtonGroup size="small">
+        <Button onClick={handleRefresh} startIcon={<Refresh />}>
+          Refresh
+        </Button>
+        <Button onClick={handleCleanup}>Cleanup</Button>
+      </ButtonGroup>
+      <List>
         {articles.map((article) => (
-          <li key={article.id}>
-            <a href={article.link}>{article.title}</a>
-          </li>
+          <ListItem key={article.id}>
+            <Link href={article.link} target="_blank">
+              {article.title}
+            </Link>
+            <Typography>{article.pubDate}</Typography>
+          </ListItem>
         ))}
-      </ul>
-    </div>
+      </List>
+    </Box>
   );
 }

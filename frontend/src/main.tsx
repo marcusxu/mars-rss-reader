@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { Navigator } from './components/Navigator';
 
-import './index.css';
 import { HomePage } from './pages/home-page';
 import { SubscriptionPage } from './pages/subscription-page';
 

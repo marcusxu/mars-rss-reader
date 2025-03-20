@@ -4,6 +4,22 @@ import {
   addSubscription,
   deleteSubscription,
 } from '../services/subscription-service';
+import {
+  Button,
+  ButtonGroup,
+  Container,
+  Link,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 interface Subscription {
   id: string;
@@ -65,78 +81,101 @@ export function SubscriptionPage() {
   };
 
   return (
-    <div>
-      <h1>Subscriptions</h1>
-      <table>
-        <thead>
-          <tr>
-            <th>🔒ID</th>
-            <th>Name</th>
-            <th>Url</th>
-            <th>Description</th>
-            <th>Category</th>
-            <th>Operation</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>-</td>
-            <td>
-              <input
-                type="text"
-                value={newSubName}
-                onChange={(e) => setNewSubName(e.target.value)}
-              />
-            </td>
-            <td>
-              <input
-                type="text"
-                value={newSubUrl}
-                onChange={(e) => setNewSubUrl(e.target.value)}
-              />
-            </td>
-            <td>
-              <input
-                type="text"
-                value={newSubDescription}
-                onChange={(e) => setNewSubDescription(e.target.value)}
-              />
-            </td>
-            <td>
-              <input
-                type="text"
-                value={newSubCategory}
-                onChange={(e) => setNewSubCategory(e.target.value)}
-              />
-            </td>
-            <button onClick={handleAddSub}>Add</button>
-            {newSubErrorMsg && (
-              <span style={{ color: 'red' }}>{newSubErrorMsg}</span>
-            )}
-          </tr>
-          {subscriptions.map((subscription) => (
-            <tr key={subscription.id}>
-              <td>{subscription.id}</td>
-              <td>{subscription.name}</td>
-              <td>
-                <a href={subscription.url} target="_blank">
-                  {subscription.url}
-                </a>
-              </td>
-              <td>{subscription.description}</td>
-              <td>{subscription.category}</td>
-              <td>
-                <button disabled onClick={() => handleModifySub()}>
-                  Modify
-                </button>
-                <button onClick={() => handleDeleteSub(subscription.id)}>
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Container maxWidth="lg">
+      <Typography variant="h6">Subscriptions</Typography>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID</TableCell>
+              <TableCell>Name</TableCell>
+              <TableCell>Url</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Operation</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            <TableRow>
+              <TableCell>-</TableCell>
+              <TableCell>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Name"
+                  type="text"
+                  value={newSubName}
+                  onChange={(e) => setNewSubName(e.target.value)}
+                ></TextField>
+              </TableCell>
+              <TableCell>
+                <TextField
+                  fullWidth
+                  size="small"
+                  required
+                  label="Url"
+                  type="text"
+                  value={newSubUrl}
+                  onChange={(e) => setNewSubUrl(e.target.value)}
+                ></TextField>
+              </TableCell>
+              <TableCell>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Description"
+                  type="text"
+                  value={newSubDescription}
+                  onChange={(e) => setNewSubDescription(e.target.value)}
+                ></TextField>
+              </TableCell>
+              <TableCell>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Category"
+                  type="text"
+                  value={newSubCategory}
+                  onChange={(e) => setNewSubCategory(e.target.value)}
+                ></TextField>
+              </TableCell>
+              <TableCell>
+                <Button onClick={handleAddSub}>Add</Button>
+                {newSubErrorMsg && (
+                  <span style={{ color: 'red' }}>{newSubErrorMsg}</span>
+                )}
+              </TableCell>
+            </TableRow>
+            {subscriptions.map((subscription) => (
+              <TableRow key={subscription.id}>
+                <TableCell>{subscription.id}</TableCell>
+                <TableCell>{subscription.name}</TableCell>
+                <TableCell>
+                  <Link href={subscription.url} target="_blank">
+                    {subscription.url}
+                  </Link>
+                </TableCell>
+                <TableCell>{subscription.description}</TableCell>
+                <TableCell>{subscription.category}</TableCell>
+                <TableCell>
+                  <ButtonGroup size="small">
+                    <Button disabled onClick={() => handleModifySub()}>
+                      Modify
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteSub(subscription.id)}
+                      color="error"
+                      startIcon={<DeleteIcon />}
+                    >
+                      Delete
+                    </Button>
+                  </ButtonGroup>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Container>
   );
 }
