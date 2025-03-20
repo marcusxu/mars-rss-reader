@@ -8,6 +8,7 @@ import Button from '@mui/material/Button';
 import {
   Box,
   ButtonGroup,
+  Chip,
   Link,
   List,
   ListItem,
@@ -27,6 +28,15 @@ interface Article {
   isFavorite: boolean;
   createdAt: string;
   updatedAt: string;
+  subscription: {
+    id: string;
+    name: string;
+    url: string;
+    category: string;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 // TODO: Add pagination
@@ -38,7 +48,7 @@ interface Article {
 // TODO: Add marking as unfavorite
 // TODO: Add marking as all read
 
-export function HomePage() {
+export function FeedsPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +80,6 @@ export function HomePage() {
 
   return (
     <Box>
-      <Typography variant="h6">Feeds</Typography>
       <ButtonGroup size="small">
         <Button onClick={handleRefresh} startIcon={<Refresh />}>
           Refresh
@@ -81,9 +90,13 @@ export function HomePage() {
         {articles.map((article) => (
           <ListItem key={article.id}>
             <Link href={article.link} target="_blank">
-              {article.title}
+              <Typography>{article.title}</Typography>
             </Link>
-            <Typography>{article.pubDate}</Typography>
+            <Chip
+              label={article.subscription.name}
+              color="primary"
+              size="small"
+            ></Chip>
           </ListItem>
         ))}
       </List>

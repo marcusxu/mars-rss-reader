@@ -14,9 +14,10 @@ A robust RSS Reader API built with NestJS framework. This service allows users t
 
 ## Roadmap
 
-- [ ] Support for managing subscriptions
+- [x] Support for managing subscriptions
 - [ ] Support for managing feeds
-- [ ] GUI for the app
+- [x] GUI for the app
+- [ ] Support for app settings, including manage cache
 
 ## Tech Stack
 

@@ -1,5 +1,5 @@
 import { Controller, Logger, Param, Patch } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { FeedsService } from './feeds.service';
 import { FeedResponseDto } from './dto/feed-response.dto';
 

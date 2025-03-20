@@ -28,7 +28,7 @@ export class Article {
   @Column()
   pubDate: Date;
 
-  @ManyToOne(() => Subscription, (subscription) => subscription.id)
+  @ManyToOne(() => Subscription, (subscription) => subscription.articles)
   subscription: Subscription;
 
   @Column({ default: false })

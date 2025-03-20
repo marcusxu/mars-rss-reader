@@ -7,6 +7,7 @@ import {
 import {
   Button,
   ButtonGroup,
+  Chip,
   Container,
   Link,
   Paper,
@@ -17,7 +18,6 @@ import {
   TableHead,
   TableRow,
   TextField,
-  Typography,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
@@ -29,7 +29,7 @@ interface Subscription {
   category?: string;
 }
 
-export function SubscriptionPage() {
+export function SubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [newSubUrl, setNewSubUrl] = useState('');
   const [newSubName, setNewSubName] = useState('');
@@ -82,12 +82,10 @@ export function SubscriptionPage() {
 
   return (
     <Container maxWidth="lg">
-      <Typography variant="h6">Subscriptions</Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Url</TableCell>
               <TableCell>Description</TableCell>
@@ -97,7 +95,6 @@ export function SubscriptionPage() {
           </TableHead>
           <TableBody>
             <TableRow>
-              <TableCell>-</TableCell>
               <TableCell>
                 <TextField
                   fullWidth
@@ -148,7 +145,6 @@ export function SubscriptionPage() {
             </TableRow>
             {subscriptions.map((subscription) => (
               <TableRow key={subscription.id}>
-                <TableCell>{subscription.id}</TableCell>
                 <TableCell>{subscription.name}</TableCell>
                 <TableCell>
                   <Link href={subscription.url} target="_blank">
@@ -156,7 +152,9 @@ export function SubscriptionPage() {
                   </Link>
                 </TableCell>
                 <TableCell>{subscription.description}</TableCell>
-                <TableCell>{subscription.category}</TableCell>
+                <TableCell>
+                  <Chip label={subscription.category}></Chip>
+                </TableCell>
                 <TableCell>
                   <ButtonGroup size="small">
                     <Button disabled onClick={() => handleModifySub()}>

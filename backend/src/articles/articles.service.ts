@@ -67,6 +67,7 @@ export class ArticlesService {
     if (findArticleDto.title) where.title = ILike(`%${findArticleDto.title}%`);
 
     const [articles, total] = await this.articleRepository.findAndCount({
+      relations: ['subscription'],
       where: where,
       skip: (page - 1) * perPage,
       take: perPage,

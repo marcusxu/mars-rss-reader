@@ -12,7 +12,6 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dt';
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import { FindSubscriptionDto } from './dto/find-subscription.dto';
 import { PaginationResponseDto } from 'src/common/pagination/pagination-response.dto';
-import { PaginationRequestDto } from 'src/common/pagination/pagination-request.dto';
 
 @Injectable()
 export class SubscriptionsService {
