@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import {
   cleanupAllFeeds,
   getArticles,
+  changeReadStatus,
   refreshAllFeeds,
+  changeFavoriteStatus,
+  markAllAsRead,
 } from '../services/article-service';
 import {
   Box,
@@ -19,6 +22,10 @@ import {
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
+import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
+import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
 interface Article {
   id: string;
@@ -43,12 +50,7 @@ interface Article {
   };
 }
 
-// TODO: Add status of a feed
 // TODO: Add filtering
-// TODO: Add marking as read
-// TODO: Add marking as favorite
-// TODO: Add marking as unread
-// TODO: Add marking as unfavorite
 // TODO: Add marking as all read
 
 export function FeedsPage() {
@@ -83,6 +85,21 @@ export function FeedsPage() {
     await cleanupAllFeeds();
     await updateArticles();
   };
+  const handleChangeReadStatus = async (article: Article) => {
+    await changeReadStatus(article);
+  };
+  const handleChangeFavoriteStatus = async (article: Article) => {
+    await changeFavoriteStatus(article);
+  };
+  const handleMarkAllAsRead = async (articles: Article[]) => {
+    await markAllAsRead(articles);
+    setArticles(
+      articles.map((a) => {
+        a.isRead = true;
+        return a;
+      }),
+    );
+  };
 
   if (loading)
     return (
@@ -102,14 +119,67 @@ export function FeedsPage() {
       <List>
         {articles.map((article) => (
           <ListItem key={article.id}>
-            <Link href={article.link} target="_blank">
-              <Typography>{article.title}</Typography>
-            </Link>
-            <Chip
-              label={article.subscription.name}
-              color="primary"
-              size="small"
-            ></Chip>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                flexGrow: 1,
+              }}
+            >
+              <Link href={article.link} target="_blank">
+                <Typography>{article.title}</Typography>
+              </Link>
+              <Chip
+                label={article.subscription.name}
+                color="primary"
+                size="small"
+              ></Chip>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Chip
+                variant="outlined"
+                size="small"
+                clickable={true}
+                onClick={async () => {
+                  handleChangeReadStatus(article);
+                  setArticles(
+                    articles.map((a) => {
+                      if (a.id === article.id) {
+                        a.isRead = !a.isRead;
+                      }
+                      return a;
+                    }),
+                  );
+                }}
+                icon={
+                  article.isRead ? (
+                    <MarkEmailReadIcon />
+                  ) : (
+                    <MarkEmailUnreadIcon />
+                  )
+                }
+              ></Chip>
+              <Chip
+                variant="outlined"
+                size="small"
+                clickable={true}
+                onClick={async () => {
+                  handleChangeFavoriteStatus(article);
+                  setArticles(
+                    articles.map((a) => {
+                      if (a.id === article.id) {
+                        a.isFavorite = !a.isFavorite;
+                      }
+                      return a;
+                    }),
+                  );
+                }}
+                icon={
+                  article.isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />
+                }
+              ></Chip>
+            </Box>
           </ListItem>
         ))}
       </List>
@@ -136,6 +206,14 @@ export function FeedsPage() {
           color="primary"
         >
           <RefreshIcon /> Refresh
+        </Fab>
+        <Fab
+          onClick={async () => handleMarkAllAsRead(articles)}
+          variant="extended"
+          size="small"
+          color="secondary"
+        >
+          <MarkEmailReadIcon /> Mark All Read
         </Fab>
         <Fab
           onClick={handleCleanup}

@@ -47,3 +47,31 @@ export const cleanupAllFeeds = async () => {
   );
   return response.data;
 };
+
+export const changeReadStatus = async (article: Article) => {
+  const response = await axios.patch<Article>(
+    'http://localhost:3000/articles/' + article.id,
+    {
+      isRead: !article.isRead,
+    },
+  );
+  return response.data;
+};
+
+export const changeFavoriteStatus = async (article: Article) => {
+  const response = await axios.patch<Article>(
+    'http://localhost:3000/articles/' + article.id,
+    {
+      isFavorite: !article.isFavorite,
+    },
+  );
+  return response.data;
+};
+
+export const markAllAsRead = async (articles: Article[]) => {
+  articles.forEach(async (article) => {
+    await axios.patch<Article>('http://localhost:3000/articles/' + article.id, {
+      isRead: true,
+    });
+  });
+};
