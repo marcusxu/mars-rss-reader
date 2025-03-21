@@ -1,12 +1,3 @@
-import { useEffect, useState } from 'react';
-import {
-  cleanupAllFeeds,
-  getArticles,
-  changeReadStatus,
-  refreshAllFeeds,
-  changeFavoriteStatus,
-  markAllAsRead,
-} from '../services/article-service';
 import {
   Box,
   Chip,
@@ -26,80 +17,24 @@ import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
 import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-
-interface Article {
-  id: string;
-  title: string;
-  content: string;
-  publishDate: string;
-  link: string;
-  author: string | null;
-  pubDate: string;
-  isRead: boolean;
-  isFavorite: boolean;
-  createdAt: string;
-  updatedAt: string;
-  subscription: {
-    id: string;
-    name: string;
-    url: string;
-    category: string;
-    description: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-}
+import { useArticles } from '../hooks/use-articles';
 
 // TODO: Add filtering
-// TODO: Add marking as all read
 
 export function FeedsPage() {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-
-  useEffect(() => {
-    updateArticles();
-  }, []);
-
-  const updateArticles = async (
-    event?: React.ChangeEvent<unknown>,
-    newPage?: number,
-  ) => {
-    setLoading(true);
-    const response = await getArticles(newPage | 1);
-    setArticles(response.data);
-    setCurrentPage(response.page);
-    setTotalPages(Math.ceil(response.total / response.perPage));
-    setLoading(false);
-  };
-  const handleRefresh = async () => {
-    setLoading(true);
-    await refreshAllFeeds();
-    await updateArticles();
-  };
-  const handleCleanup = async () => {
-    setLoading(true);
-    await cleanupAllFeeds();
-    await updateArticles();
-  };
-  const handleChangeReadStatus = async (article: Article) => {
-    await changeReadStatus(article);
-  };
-  const handleChangeFavoriteStatus = async (article: Article) => {
-    await changeFavoriteStatus(article);
-  };
-  const handleMarkAllAsRead = async (articles: Article[]) => {
-    await markAllAsRead(articles);
-    setArticles(
-      articles.map((a) => {
-        a.isRead = true;
-        return a;
-      }),
-    );
-  };
+  const {
+    loading,
+    error,
+    articles,
+    currentPage,
+    totalPages,
+    updateArticles,
+    handleRefresh,
+    handleCleanup,
+    handleChangeReadStatus,
+    handleChangeFavoriteStatus,
+    handleMarkAllAsRead,
+  } = useArticles();
 
   if (loading)
     return (
@@ -112,7 +47,14 @@ export function FeedsPage() {
         <CircularProgress />
       </Box>
     );
-  if (error) return <div>Error: {error}</div>;
+  if (error)
+    return (
+      <div>
+        <Box>
+          <Typography>{error}</Typography>
+        </Box>
+      </div>
+    );
 
   return (
     <Container>
@@ -143,14 +85,6 @@ export function FeedsPage() {
                 clickable={true}
                 onClick={async () => {
                   handleChangeReadStatus(article);
-                  setArticles(
-                    articles.map((a) => {
-                      if (a.id === article.id) {
-                        a.isRead = !a.isRead;
-                      }
-                      return a;
-                    }),
-                  );
                 }}
                 icon={
                   article.isRead ? (
@@ -166,14 +100,6 @@ export function FeedsPage() {
                 clickable={true}
                 onClick={async () => {
                   handleChangeFavoriteStatus(article);
-                  setArticles(
-                    articles.map((a) => {
-                      if (a.id === article.id) {
-                        a.isFavorite = !a.isFavorite;
-                      }
-                      return a;
-                    }),
-                  );
                 }}
                 icon={
                   article.isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />
