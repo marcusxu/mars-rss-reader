@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router';
-import { Navigator } from './components/Navigator';
+import { Navigator } from './components/navigator';
 
 import { FeedsPage } from './pages/feeds-page';
 import { SubscriptionsPage } from './pages/subscriptions-page';

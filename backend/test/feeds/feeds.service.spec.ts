@@ -17,7 +17,7 @@ describe('FeedsService', () => {
   let subscriptionRepository: Repository<Subscription>;
 
   const mockSubscription: Subscription = {
-    id: 'sub1',
+    id: '123e4567-e89b-12d3-a456-426614174001',
     url: 'https://example.com/rss.xml',
     name: 'Test Feed',
     category: 'Tech',
@@ -106,10 +106,10 @@ describe('FeedsService', () => {
       mockArticleRepository.find.mockResolvedValue([]);
       mockArticleRepository.save.mockResolvedValue([mockArticle]);
 
-      const result = await service.update('sub1');
+      const result = await service.update('123e4567-e89b-12d3-a456-426614174001');
 
       expect(mockSubscriptionRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 'sub1' },
+        where: { id: '123e4567-e89b-12d3-a456-426614174001' },
       });
       expect(mockedAxios.get).toHaveBeenCalledWith(
         mockSubscription.url,
@@ -120,18 +120,18 @@ describe('FeedsService', () => {
           }),
         }),
       );
-      expect(result.subscriptionId).toBe('sub1');
+      expect(result.subscriptionId).toBe('123e4567-e89b-12d3-a456-426614174001');
       expect(result.articlesCount).toBe(1);
     });
 
     it('should throw NotFoundException when subscription not found', async () => {
       mockSubscriptionRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.update('non-existent')).rejects.toThrow(
+      await expect(service.update('123e4567-e89b-12d3-a456-426614174999')).rejects.toThrow(
         NotFoundException,
       );
       expect(mockSubscriptionRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 'non-existent' },
+        where: { id: '123e4567-e89b-12d3-a456-426614174999' },
       });
     });
 
@@ -146,7 +146,7 @@ describe('FeedsService', () => {
       mockSubscriptionRepository.findOne.mockResolvedValue(mockSubscription);
       mockedAxios.get.mockResolvedValue({ data: emptyRssResponse });
 
-      const result = await service.update('sub1');
+      const result = await service.update('123e4567-e89b-12d3-a456-426614174001');
 
       expect(result.articlesCount).toBe(0);
     });
@@ -155,7 +155,7 @@ describe('FeedsService', () => {
       mockSubscriptionRepository.findOne.mockResolvedValue(mockSubscription);
       mockedAxios.get.mockRejectedValue(new Error('Network error'));
 
-      await expect(service.update('sub1')).rejects.toThrow();
+      await expect(service.update('123e4567-e89b-12d3-a456-426614174001')).rejects.toThrow();
     });
   });
 
@@ -166,7 +166,7 @@ describe('FeedsService', () => {
 
       // Mock the update method to avoid actual RSS fetching
       jest.spyOn(service, 'update').mockResolvedValue({
-        subscriptionId: 'sub1',
+        subscriptionId: '123e4567-e89b-12d3-a456-426614174001',
         updatedAt: '2024-01-01',
         articlesCount: 5,
       });
@@ -174,7 +174,7 @@ describe('FeedsService', () => {
       const result = await service.updateAll();
 
       expect(mockSubscriptionRepository.find).toHaveBeenCalled();
-      expect(service.update).toHaveBeenCalledWith('sub1');
+      expect(service.update).toHaveBeenCalledWith('123e4567-e89b-12d3-a456-426614174001');
       expect(result.articlesCount).toBe(5);
     });
 
@@ -189,14 +189,14 @@ describe('FeedsService', () => {
     it('should handle partial failures in batch update', async () => {
       const subscriptions = [
         mockSubscription,
-        { ...mockSubscription, id: 'sub2' },
+        { ...mockSubscription, id: '123e4567-e89b-12d3-a456-426614174002' },
       ];
       mockSubscriptionRepository.find.mockResolvedValue(subscriptions);
 
       jest
         .spyOn(service, 'update')
         .mockResolvedValueOnce({
-          subscriptionId: 'sub1',
+          subscriptionId: '123e4567-e89b-12d3-a456-426614174001',
           updatedAt: '2024-01-01',
           articlesCount: 5,
         })
@@ -213,13 +213,13 @@ describe('FeedsService', () => {
       mockSubscriptionRepository.findOne.mockResolvedValue(mockSubscription);
       mockArticleRepository.delete.mockResolvedValue({ affected: 10 });
 
-      const result = await service.cleanupArticles('sub1');
+      const result = await service.cleanupArticles('123e4567-e89b-12d3-a456-426614174001');
 
       expect(mockSubscriptionRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 'sub1' },
+        where: { id: '123e4567-e89b-12d3-a456-426614174001' },
       });
       expect(mockArticleRepository.delete).toHaveBeenCalledWith({
-        subscription: { id: 'sub1' },
+        subscription: { id: '123e4567-e89b-12d3-a456-426614174001' },
       });
       expect(result.articlesCount).toBe(10);
     });
@@ -227,7 +227,7 @@ describe('FeedsService', () => {
     it('should throw NotFoundException when subscription not found', async () => {
       mockSubscriptionRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.cleanupArticles('non-existent')).rejects.toThrow(
+      await expect(service.cleanupArticles('123e4567-e89b-12d3-a456-426614174999')).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -239,14 +239,14 @@ describe('FeedsService', () => {
       mockSubscriptionRepository.find.mockResolvedValue(subscriptions);
 
       jest.spyOn(service, 'cleanupArticles').mockResolvedValue({
-        subscriptionId: 'sub1',
+        subscriptionId: '123e4567-e89b-12d3-a456-426614174001',
         updatedAt: '2024-01-01',
         articlesCount: 10,
       });
 
       const result = await service.cleanupAll();
 
-      expect(service.cleanupArticles).toHaveBeenCalledWith('sub1');
+      expect(service.cleanupArticles).toHaveBeenCalledWith('123e4567-e89b-12d3-a456-426614174001');
       expect(result.articlesCount).toBe(10);
     });
 

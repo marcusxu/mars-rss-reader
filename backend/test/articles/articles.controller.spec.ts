@@ -13,7 +13,7 @@ describe('ArticlesController', () => {
   let service: ArticlesService;
 
   const mockArticle: Article = {
-    id: '1',
+    id: '123e4567-e89b-12d3-a456-426614174000',
     title: 'Test Article',
     content: 'Test Content',
     link: 'https://example.com/test',
@@ -46,6 +46,7 @@ describe('ArticlesController', () => {
   const mockArticlesService = {
     find: jest.fn(),
     update: jest.fn(),
+    batchUpdate: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -85,7 +86,7 @@ describe('ArticlesController', () => {
 
   describe('getArticleById', () => {
     it('should return an article by ID', async () => {
-      const articleId = '1';
+      const articleId = '123e4567-e89b-12d3-a456-426614174000';
       mockArticlesService.find.mockResolvedValue(mockPaginatedResult);
 
       const result = await controller.getArticleById(articleId);
@@ -99,7 +100,7 @@ describe('ArticlesController', () => {
     });
 
     it('should throw NotFoundException when article not found', async () => {
-      const articleId = 'non-existent';
+      const articleId = '123e4567-e89b-12d3-a456-426614174999';
       const emptyResult = { ...mockPaginatedResult, data: [] };
       mockArticlesService.find.mockResolvedValue(emptyResult);
 
@@ -123,7 +124,7 @@ describe('ArticlesController', () => {
 
   describe('updateArticle', () => {
     it('should update an article', async () => {
-      const articleId = '1';
+      const articleId = '123e4567-e89b-12d3-a456-426614174000';
       const updateDto: UpdateArticleDto = { isRead: true };
       const expectedResponse = { articleId, updatedAt: '2024-01-01' };
       mockArticlesService.update.mockResolvedValue(expectedResponse);
@@ -139,15 +140,18 @@ describe('ArticlesController', () => {
     it('should batch update articles successfully', async () => {
       const updateDto: UpdateArticleDto = {
         isRead: true,
-        ids: ['1', '2', '3'],
+        ids: ['123e4567-e89b-12d3-a456-426614174000', '2', '3'],
       };
-      mockArticlesService.update
-        .mockResolvedValueOnce({ articleId: '1', updatedAt: '2024-01-01' })
-        .mockResolvedValueOnce({ articleId: '2', updatedAt: '2024-01-01' })
-        .mockResolvedValueOnce({ articleId: '3', updatedAt: '2024-01-01' });
+      const expectedResponse = {
+        updatedCount: 3,
+        failedIds: [],
+        message: 'Updated 3 articles, 0 failed',
+      };
+      mockArticlesService.batchUpdate.mockResolvedValue(expectedResponse);
 
       const result = await controller.batchUpdateArticles(updateDto);
 
+      expect(service.batchUpdate).toHaveBeenCalledWith(updateDto);
       expect(result.updatedCount).toBe(3);
       expect(result.failedIds).toHaveLength(0);
       expect(result.message).toBe('Updated 3 articles, 0 failed');
@@ -156,15 +160,18 @@ describe('ArticlesController', () => {
     it('should handle partial failures in batch update', async () => {
       const updateDto: UpdateArticleDto = {
         isRead: true,
-        ids: ['1', '2', '3'],
+        ids: ['123e4567-e89b-12d3-a456-426614174000', '2', '3'],
       };
-      mockArticlesService.update
-        .mockResolvedValueOnce({ articleId: '1', updatedAt: '2024-01-01' })
-        .mockRejectedValueOnce(new Error('Update failed'))
-        .mockResolvedValueOnce({ articleId: '3', updatedAt: '2024-01-01' });
+      const expectedResponse = {
+        updatedCount: 2,
+        failedIds: ['2'],
+        message: 'Updated 2 articles, 1 failed',
+      };
+      mockArticlesService.batchUpdate.mockResolvedValue(expectedResponse);
 
       const result = await controller.batchUpdateArticles(updateDto);
 
+      expect(service.batchUpdate).toHaveBeenCalledWith(updateDto);
       expect(result.updatedCount).toBe(2);
       expect(result.failedIds).toEqual(['2']);
       expect(result.message).toBe('Updated 2 articles, 1 failed');
@@ -172,9 +179,16 @@ describe('ArticlesController', () => {
 
     it('should return empty result when no IDs provided', async () => {
       const updateDto: UpdateArticleDto = { isRead: true };
+      const expectedResponse = {
+        updatedCount: 0,
+        failedIds: [],
+        message: 'No article IDs provided',
+      };
+      mockArticlesService.batchUpdate.mockResolvedValue(expectedResponse);
 
       const result = await controller.batchUpdateArticles(updateDto);
 
+      expect(service.batchUpdate).toHaveBeenCalledWith(updateDto);
       expect(result.updatedCount).toBe(0);
       expect(result.failedIds).toHaveLength(0);
       expect(result.message).toBe('No article IDs provided');

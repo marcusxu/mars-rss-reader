@@ -1,7 +1,8 @@
-import { Controller, Logger, Param, Patch } from '@nestjs/common';
+import { Controller, Logger, Param, Patch, BadRequestException } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { FeedsService } from './feeds.service';
 import { FeedResponseDto } from './dto/feed-response.dto';
+import { ValidationUtil } from 'src/common/utils/validation.util';
 
 @ApiTags('feeds')
 @Controller('feeds')
@@ -14,6 +15,10 @@ export class FeedsController {
   @ApiOperation({ summary: 'Update articles for a subscription' })
   @ApiParam({ name: 'id', description: 'Subscription ID' })
   async updateFeedForSub(@Param('id') id: string): Promise<FeedResponseDto> {
+    if (!ValidationUtil.isValidUUID(id)) {
+      throw new BadRequestException('Invalid UUID format for subscription id');
+    }
+
     this.logger.log(`Attempting to update articles for subscription: ${id}`);
     return await this.feedsService.update(id);
   }
@@ -22,6 +27,10 @@ export class FeedsController {
   @ApiOperation({ summary: 'Cleanup articles for a subscription' })
   @ApiParam({ name: 'id', description: 'Subscription ID' })
   async cleanupFeedForSub(@Param('id') id: string): Promise<FeedResponseDto> {
+    if (!ValidationUtil.isValidUUID(id)) {
+      throw new BadRequestException('Invalid UUID format for subscription id');
+    }
+
     this.logger.log(`Attempting to cleanup articles for subscription: ${id}`);
     return await this.feedsService.cleanupArticles(id);
   }

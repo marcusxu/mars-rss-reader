@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { ArticlesService } from 'src/articles/articles.service';
 import { Article } from 'src/articles/entities/article.entity';
@@ -12,7 +12,7 @@ describe('ArticlesService', () => {
   let repository: Repository<Article>;
 
   const mockArticle: Article = {
-    id: '1',
+    id: '123e4567-e89b-12d3-a456-426614174000',
     title: 'Test Article',
     content: 'Test Content',
     link: 'https://example.com/test',
@@ -23,7 +23,7 @@ describe('ArticlesService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     subscription: {
-      id: 'sub1',
+      id: '123e4567-e89b-12d3-a456-426614174001',
       url: 'https://example.com/rss',
       name: 'Test Feed',
       category: 'Tech',
@@ -34,11 +34,37 @@ describe('ArticlesService', () => {
     },
   };
 
+  const mockQueryBuilder = {
+    leftJoinAndSelect: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    getManyAndCount: jest.fn(),
+  };
+
   const mockRepository = {
     findOne: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
     findAndCount: jest.fn(),
+    createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+  };
+
+  const mockQueryRunner = {
+    connect: jest.fn(),
+    startTransaction: jest.fn(),
+    commitTransaction: jest.fn(),
+    rollbackTransaction: jest.fn(),
+    release: jest.fn(),
+    manager: {
+      findOne: jest.fn(),
+      save: jest.fn(),
+    },
+  };
+
+  const mockDataSource = {
+    createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
   };
 
   beforeEach(async () => {
@@ -49,6 +75,10 @@ describe('ArticlesService', () => {
           provide: getRepositoryToken(Article),
           useValue: mockRepository,
         },
+        {
+          provide: DataSource,
+          useValue: mockDataSource,
+        },
       ],
     }).compile();
 
@@ -58,6 +88,19 @@ describe('ArticlesService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    mockQueryRunner.connect.mockClear();
+    mockQueryRunner.startTransaction.mockClear();
+    mockQueryRunner.commitTransaction.mockClear();
+    mockQueryRunner.rollbackTransaction.mockClear();
+    mockQueryRunner.release.mockClear();
+    mockQueryRunner.manager.findOne.mockClear();
+    mockQueryRunner.manager.save.mockClear();
+    mockQueryBuilder.leftJoinAndSelect.mockClear();
+    mockQueryBuilder.andWhere.mockClear();
+    mockQueryBuilder.orderBy.mockClear();
+    mockQueryBuilder.skip.mockClear();
+    mockQueryBuilder.take.mockClear();
+    mockQueryBuilder.getManyAndCount.mockClear();
   });
 
   it('should be defined', () => {
@@ -66,7 +109,7 @@ describe('ArticlesService', () => {
 
   describe('update', () => {
     it('should update an article successfully', async () => {
-      const articleId = '1';
+      const articleId = '123e4567-e89b-12d3-a456-426614174000';
       const updateDto: UpdateArticleDto = { isRead: true };
       const updatedArticle = { ...mockArticle, isRead: true };
 
@@ -86,7 +129,7 @@ describe('ArticlesService', () => {
     });
 
     it('should throw NotFoundException when article not found', async () => {
-      const articleId = 'non-existent';
+      const articleId = '123e4567-e89b-12d3-a456-426614174999';
       const updateDto: UpdateArticleDto = { isRead: true };
 
       mockRepository.findOne.mockResolvedValue(null);
@@ -103,7 +146,7 @@ describe('ArticlesService', () => {
 
   describe('getArticlesBySubId', () => {
     it('should return articles for a subscription', async () => {
-      const subscriptionId = 'sub1';
+      const subscriptionId = '123e4567-e89b-12d3-a456-426614174001';
       const articles = [mockArticle];
 
       mockRepository.find.mockResolvedValue(articles);
@@ -124,17 +167,21 @@ describe('ArticlesService', () => {
       const articles = [mockArticle];
       const total = 1;
 
-      mockRepository.findAndCount.mockResolvedValue([articles, total]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([articles, total]);
 
       const result = await service.find(findDto);
 
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        relations: ['subscription'],
-        where: {},
-        skip: 0,
-        take: 10,
-        order: { createdAt: 'DESC' },
-      });
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('article');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+        'article.subscription',
+        'subscription',
+      );
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
+        'article.createdAt',
+        'DESC',
+      );
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
       expect(result.data).toEqual(articles);
       expect(result.total).toBe(total);
       expect(result.page).toBe(1);
@@ -146,29 +193,33 @@ describe('ArticlesService', () => {
         title: 'test',
         author: 'author',
         isRead: true,
-        subscriptionId: 'sub1',
+        subscriptionId: '123e4567-e89b-12d3-a456-426614174001',
         page: 1,
         perPage: 10,
       };
       const articles = [mockArticle];
       const total = 1;
 
-      mockRepository.findAndCount.mockResolvedValue([articles, total]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([articles, total]);
 
       await service.find(findDto);
 
-      expect(repository.findAndCount).toHaveBeenCalledWith({
-        relations: ['subscription'],
-        where: {
-          title: expect.any(Object), // ILike matcher
-          author: expect.any(Object), // ILike matcher
-          isRead: true,
-          subscription: { id: 'sub1' },
-        },
-        skip: 0,
-        take: 10,
-        order: { createdAt: 'DESC' },
-      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'article.title ILIKE :title',
+        { title: '%test%' },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'article.author ILIKE :author',
+        { author: '%author%' },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'article.isRead = :isRead',
+        { isRead: true },
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'subscription.id = :subscriptionId',
+        { subscriptionId: '123e4567-e89b-12d3-a456-426614174001' },
+      );
     });
 
     it('should use default pagination values', async () => {
@@ -176,12 +227,118 @@ describe('ArticlesService', () => {
       const articles = [mockArticle];
       const total = 1;
 
-      mockRepository.findAndCount.mockResolvedValue([articles, total]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([articles, total]);
 
       const result = await service.find(findDto);
 
       expect(result.page).toBe(1);
       expect(result.perPage).toBe(10);
+    });
+  });
+
+  describe('batchUpdate', () => {
+    it('should batch update articles successfully', async () => {
+      const updateDto: UpdateArticleDto = {
+        ids: [
+          '123e4567-e89b-12d3-a456-426614174000',
+          '123e4567-e89b-12d3-a456-426614174002',
+          '123e4567-e89b-12d3-a456-426614174003',
+        ],
+        isRead: true,
+      };
+
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(mockArticle)
+        .mockResolvedValueOnce({ ...mockArticle, id: '123e4567-e89b-12d3-a456-426614174002' })
+        .mockResolvedValueOnce({ ...mockArticle, id: '123e4567-e89b-12d3-a456-426614174003' });
+
+      mockQueryRunner.manager.save.mockResolvedValue({});
+
+      const result = await service.batchUpdate(updateDto);
+
+      expect(mockQueryRunner.connect).toHaveBeenCalled();
+      expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(mockQueryRunner.release).toHaveBeenCalled();
+      expect(result.updatedCount).toBe(3);
+      expect(result.failedIds).toHaveLength(0);
+      expect(result.message).toBe('Updated 3 articles, 0 failed');
+    });
+
+    it('should handle partial failures in batch update', async () => {
+      const updateDto: UpdateArticleDto = {
+        ids: [
+          '123e4567-e89b-12d3-a456-426614174000',
+          '123e4567-e89b-12d3-a456-426614174002',
+          '123e4567-e89b-12d3-a456-426614174003',
+        ],
+        isRead: true,
+      };
+
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(mockArticle)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ ...mockArticle, id: '123e4567-e89b-12d3-a456-426614174003' });
+
+      mockQueryRunner.manager.save.mockResolvedValue({});
+
+      const result = await service.batchUpdate(updateDto);
+
+      expect(result.updatedCount).toBe(2);
+      expect(result.failedIds).toEqual(['123e4567-e89b-12d3-a456-426614174002']);
+      expect(result.message).toBe('Updated 2 articles, 1 failed');
+    });
+
+    it('should return empty result when no IDs provided', async () => {
+      const updateDto: UpdateArticleDto = { isRead: true };
+
+      const result = await service.batchUpdate(updateDto);
+
+      expect(result.updatedCount).toBe(0);
+      expect(result.failedIds).toHaveLength(0);
+      expect(result.message).toBe('No article IDs provided');
+      expect(mockQueryRunner.connect).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors during batch update', async () => {
+      const updateDto: UpdateArticleDto = {
+        ids: [
+          '123e4567-e89b-12d3-a456-426614174000',
+          '123e4567-e89b-12d3-a456-426614174002',
+        ],
+        isRead: true,
+      };
+
+      mockQueryRunner.manager.findOne
+        .mockResolvedValueOnce(mockArticle)
+        .mockResolvedValueOnce({ ...mockArticle, id: '123e4567-e89b-12d3-a456-426614174002' });
+
+      mockQueryRunner.manager.save
+        .mockResolvedValueOnce({})
+        .mockRejectedValueOnce(new Error('Database error'));
+
+      const result = await service.batchUpdate(updateDto);
+
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+      expect(result.failedIds).toContain('123e4567-e89b-12d3-a456-426614174002');
+    });
+
+    it('should update both isRead and isFavorite', async () => {
+      const updateDto: UpdateArticleDto = {
+        ids: ['123e4567-e89b-12d3-a456-426614174000'],
+        isRead: true,
+        isFavorite: true,
+      };
+
+      mockQueryRunner.manager.findOne.mockResolvedValue(mockArticle);
+      mockQueryRunner.manager.save.mockResolvedValue({});
+
+      const result = await service.batchUpdate(updateDto);
+
+      const savedArticle = mockQueryRunner.manager.save.mock.calls[0][0];
+      expect(savedArticle.isRead).toBe(true);
+      expect(savedArticle.isFavorite).toBe(true);
+      expect(result.updatedCount).toBe(1);
     });
   });
 });

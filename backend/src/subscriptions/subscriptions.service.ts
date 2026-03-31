@@ -13,6 +13,7 @@ import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import { FindSubscriptionDto } from './dto/find-subscription.dto';
 import { PaginationResponseDto } from 'src/common/pagination/pagination-response.dto';
 import { DeleteSubscriptionResponseDto } from './dto/delete-subscription-response.dto';
+import { ValidationUtil } from 'src/common/utils/validation.util';
 
 @Injectable()
 export class SubscriptionsService {
@@ -55,6 +56,8 @@ export class SubscriptionsService {
   }
 
   async remove(id: string): Promise<DeleteSubscriptionResponseDto> {
+    ValidationUtil.validateUUID(id, 'subscription id');
+
     this.logger.log(`Attempting to remove subscription: ${id}`);
     const subscription = await this.subscriptionsRepository.findOne({
       where: { id },
@@ -73,6 +76,8 @@ export class SubscriptionsService {
     id: string,
     updateSubscriptionDto: UpdateSubscriptionDto,
   ): Promise<SubscriptionResponseDto> {
+    ValidationUtil.validateUUID(id, 'subscription id');
+
     this.logger.log(`Attempting to update subscription: ${id}`);
     const subscription = await this.subscriptionsRepository.findOne({
       where: { id },
@@ -110,6 +115,10 @@ export class SubscriptionsService {
   async find(
     findSubscriptionDto: FindSubscriptionDto,
   ): Promise<PaginationResponseDto<Subscription>> {
+    if (findSubscriptionDto.id) {
+      ValidationUtil.validateUUID(findSubscriptionDto.id, 'id');
+    }
+
     const page = findSubscriptionDto?.page || 1;
     const perPage = findSubscriptionDto?.perPage || 10;
 

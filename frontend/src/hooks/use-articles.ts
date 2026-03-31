@@ -11,21 +11,22 @@ import {
 
 export function useArticles() {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [filterStatus, setFilterStatus] = useState(false);
+  const [filterValue, setFilterValue] = useState<string>('');
 
   useEffect(() => {
     updateArticles();
   }, []);
 
   const updateArticles = async (
-    event?: React.ChangeEvent<unknown>,
+    _event?: React.ChangeEvent<unknown>,
     newPage?: number,
   ) => {
     setLoading(true);
-    const response = await getArticles(newPage | 1);
+    const response = await getArticles(newPage || 1);
     setArticles(response.data);
     setCurrentPage(response.page);
     setTotalPages(Math.ceil(response.total / response.perPage));
@@ -73,17 +74,37 @@ export function useArticles() {
     );
   };
 
+  const handleFilterArticles = async (
+    _event?: React.ChangeEvent<unknown>,
+    newPage?: number,
+  ) => {
+    setLoading(true);
+    const response = await getArticles(
+      newPage || 1,
+      10,
+      'title=' + filterValue,
+    );
+    setArticles(response.data);
+    setCurrentPage(response.page);
+    setTotalPages(Math.ceil(response.total / response.perPage));
+    setLoading(false);
+    setFilterStatus(true);
+  };
+
   return {
     loading,
-    error,
     articles,
     currentPage,
     totalPages,
+    filterStatus,
+    filterValue,
     updateArticles,
     handleRefresh,
     handleCleanup,
     handleChangeReadStatus,
     handleChangeFavoriteStatus,
     handleMarkAllAsRead,
+    handleFilterArticles,
+    setFilterValue,
   };
 }

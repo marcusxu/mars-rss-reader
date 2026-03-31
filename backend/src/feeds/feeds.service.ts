@@ -6,6 +6,7 @@ import Parser from 'rss-parser';
 import axios from 'axios';
 import { Subscription } from 'src/subscriptions/entities/subscription.entity';
 import { FeedResponseDto } from './dto/feed-response.dto';
+import { ValidationUtil } from 'src/common/utils/validation.util';
 
 @Injectable()
 export class FeedsService {
@@ -27,6 +28,8 @@ export class FeedsService {
   }
 
   async update(subscriptionId: string): Promise<FeedResponseDto> {
+    ValidationUtil.validateUUID(subscriptionId, 'subscription id');
+
     const startTime = Date.now();
     this.logger.log(
       `Attempting to update feed for subscription: ${subscriptionId}`,
@@ -300,6 +303,8 @@ export class FeedsService {
   }
 
   async cleanupArticles(subscriptionId: string): Promise<FeedResponseDto> {
+    ValidationUtil.validateUUID(subscriptionId, 'subscription id');
+
     this.logger.log(`Attempting to cleanup articles: ${subscriptionId}`);
     await this.getSubscriptionById(subscriptionId);
     const result = await this.articlesRepository.delete({

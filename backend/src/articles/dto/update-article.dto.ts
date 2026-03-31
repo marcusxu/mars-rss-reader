@@ -1,6 +1,7 @@
 import { IsArray, IsBoolean, IsOptional } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
+import { IsCustomUUID } from 'src/common/decorators/is-uuid.decorator';
 
 export class UpdateArticleDto {
   @IsBoolean()
@@ -29,9 +30,11 @@ export class UpdateArticleDto {
 
   @IsArray()
   @IsOptional()
+  @IsCustomUUID({ each: true, message: 'Each ID must be a valid UUID' })
   @ApiPropertyOptional({
     description: 'ids for bulk operation',
     type: [String],
+    example: ['123e4567-e89b-12d3-a456-426614174000'],
   })
   ids?: string[];
 }

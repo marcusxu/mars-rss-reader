@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { SubscriptionsService } from './subscriptions.service';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -18,6 +19,7 @@ import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { FindSubscriptionDto } from './dto/find-subscription.dto';
 import { PaginationResponseDto } from 'src/common/pagination/pagination-response.dto';
 import { DeleteSubscriptionResponseDto } from './dto/delete-subscription-response.dto';
+import { ValidationUtil } from 'src/common/utils/validation.util';
 
 @ApiTags('Subscriptions')
 @Controller('subscriptions')
@@ -43,6 +45,10 @@ export class SubscriptionsController {
   async deleteSubscription(
     @Param('id') id: string,
   ): Promise<DeleteSubscriptionResponseDto> {
+    if (!ValidationUtil.isValidUUID(id)) {
+      throw new BadRequestException('Invalid UUID format for subscription id');
+    }
+
     this.logger.log(`Attempting to remove subscription: ${id}`);
     const result = await this.subscriptionsService.remove(id);
     return result;
@@ -54,6 +60,10 @@ export class SubscriptionsController {
     @Param('id') id: string,
     @Body() updateSubscriptionDto: UpdateSubscriptionDto,
   ): Promise<SubscriptionResponseDto> {
+    if (!ValidationUtil.isValidUUID(id)) {
+      throw new BadRequestException('Invalid UUID format for subscription id');
+    }
+
     this.logger.log(`Attempting to update subscription: ${id}`);
     return await this.subscriptionsService.update(id, updateSubscriptionDto);
   }

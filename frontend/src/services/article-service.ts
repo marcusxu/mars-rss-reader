@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api.config';
 
 interface ArticleResponse {
   page: number;
@@ -13,6 +14,13 @@ interface FeedResponse {
   updatedAt: string;
   articlesCount: number;
 }
+
+interface BatchUpdateResponse {
+  updatedCount: number;
+  failedIds: string[];
+  message: string;
+}
+
 interface Article {
   id: string;
   title: string;
@@ -25,32 +33,46 @@ interface Article {
   isFavorite: boolean;
   createdAt: string;
   updatedAt: string;
+  subscription: {
+    id: string;
+    name: string;
+    url: string;
+    category: string;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
-export const getArticles = async (page: number = 1, perPage: number = 10) => {
+export const getArticles = async (
+  page: number = 1,
+  perPage: number = 10,
+  filter = '',
+) => {
+  const filterParam = filter ? '&' + filter : '';
   const response = await axios.get<ArticleResponse>(
-    `http://localhost:3000/articles?page=${page}&perPage=${perPage}`,
+    `${API_BASE_URL}/articles?page=${page}&perPage=${perPage}` + filterParam,
   );
   return response.data;
 };
 
 export const refreshAllFeeds = async () => {
   const response = await axios.patch<FeedResponse>(
-    'http://localhost:3000/feeds/update-all',
+    `${API_BASE_URL}/feeds/update-all`,
   );
   return response.data;
 };
 
 export const cleanupAllFeeds = async () => {
   const response = await axios.patch<FeedResponse>(
-    'http://localhost:3000/feeds/cleanup-all',
+    `${API_BASE_URL}/feeds/cleanup-all`,
   );
   return response.data;
 };
 
 export const changeReadStatus = async (article: Article) => {
   const response = await axios.patch<Article>(
-    'http://localhost:3000/articles/' + article.id,
+    `${API_BASE_URL}/articles/${article.id}`,
     {
       isRead: !article.isRead,
     },
@@ -60,7 +82,7 @@ export const changeReadStatus = async (article: Article) => {
 
 export const changeFavoriteStatus = async (article: Article) => {
   const response = await axios.patch<Article>(
-    'http://localhost:3000/articles/' + article.id,
+    `${API_BASE_URL}/articles/${article.id}`,
     {
       isFavorite: !article.isFavorite,
     },
@@ -69,9 +91,13 @@ export const changeFavoriteStatus = async (article: Article) => {
 };
 
 export const markAllAsRead = async (articles: Article[]) => {
-  articles.forEach(async (article) => {
-    await axios.patch<Article>('http://localhost:3000/articles/' + article.id, {
+  const articleIds = articles.map((article) => article.id);
+  const response = await axios.patch<BatchUpdateResponse>(
+    `${API_BASE_URL}/articles/batch-update`,
+    {
+      ids: articleIds,
       isRead: true,
-    });
-  });
+    },
+  );
+  return response.data;
 };

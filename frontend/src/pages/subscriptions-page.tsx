@@ -35,11 +35,11 @@ export function SubscriptionsPage() {
   const [newSubName, setNewSubName] = useState('');
   const [newSubDescription, setNewSubDescription] = useState('');
   const [newSubCategory, setNewSubCategory] = useState('');
-  const [newSubErrorMsg, setNewSubErrorMsg] = useState('');
+  const [inputErrorState, setInputErrorState] = useState(false);
 
   const fetchSubscriptions = async () => {
     const response = await getSubscriptions();
-    setSubscriptions(response.data);
+    setSubscriptions(response);
   };
   useEffect(() => {
     fetchSubscriptions();
@@ -57,10 +57,10 @@ export function SubscriptionsPage() {
       setNewSubName('');
       setNewSubDescription('');
       setNewSubCategory('');
-      setNewSubErrorMsg('');
+      setInputErrorState(false);
       fetchSubscriptions();
     } else {
-      setNewSubErrorMsg('Failed: ' + response.message);
+      setInputErrorState(true);
     }
   };
 
@@ -73,11 +73,8 @@ export function SubscriptionsPage() {
   };
 
   // TODO: Implement handleModifySub
-  const handleModifySub = async () => {
-    // When click the button, the row become editable, and show save button
-    // When click save, call service function to modify
-    // After finish, the row become non-editable, and show modify button
-    // Refresh the table
+  const handleModifySub = async (subscriptionId: string) => {
+    console.log('Modify subscription with id:', subscriptionId);
   };
 
   return (
@@ -86,11 +83,11 @@ export function SubscriptionsPage() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Url</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Operation</TableCell>
+              <TableCell align="center">Name</TableCell>
+              <TableCell align="center">Url</TableCell>
+              <TableCell align="center">Description</TableCell>
+              <TableCell align="center">Category</TableCell>
+              <TableCell align="center">Operation</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -103,6 +100,7 @@ export function SubscriptionsPage() {
                   type="text"
                   value={newSubName}
                   onChange={(e) => setNewSubName(e.target.value)}
+                  error={inputErrorState}
                 ></TextField>
               </TableCell>
               <TableCell>
@@ -114,6 +112,7 @@ export function SubscriptionsPage() {
                   type="text"
                   value={newSubUrl}
                   onChange={(e) => setNewSubUrl(e.target.value)}
+                  error={inputErrorState}
                 ></TextField>
               </TableCell>
               <TableCell>
@@ -124,6 +123,7 @@ export function SubscriptionsPage() {
                   type="text"
                   value={newSubDescription}
                   onChange={(e) => setNewSubDescription(e.target.value)}
+                  error={inputErrorState}
                 ></TextField>
               </TableCell>
               <TableCell>
@@ -134,18 +134,21 @@ export function SubscriptionsPage() {
                   type="text"
                   value={newSubCategory}
                   onChange={(e) => setNewSubCategory(e.target.value)}
+                  error={inputErrorState}
                 ></TextField>
               </TableCell>
               <TableCell>
                 <Button onClick={handleAddSub}>Add</Button>
-                {newSubErrorMsg && (
-                  <span style={{ color: 'red' }}>{newSubErrorMsg}</span>
-                )}
               </TableCell>
             </TableRow>
             {subscriptions.map((subscription) => (
               <TableRow key={subscription.id}>
-                <TableCell>{subscription.name}</TableCell>
+                <TableCell>
+                  {' '}
+                  <TextField label={subscription.name} disabled={true}>
+                    {' '}
+                  </TextField>
+                </TableCell>
                 <TableCell>
                   <Link href={subscription.url} target="_blank">
                     {subscription.url}
@@ -153,11 +156,11 @@ export function SubscriptionsPage() {
                 </TableCell>
                 <TableCell>{subscription.description}</TableCell>
                 <TableCell>
-                  <Chip label={subscription.category}></Chip>
+                  <Chip label={subscription.category} clickable={true}></Chip>
                 </TableCell>
                 <TableCell>
                   <ButtonGroup size="small">
-                    <Button disabled onClick={() => handleModifySub()}>
+                    <Button onClick={() => handleModifySub(subscription.id)}>
                       Modify
                     </Button>
                     <Button

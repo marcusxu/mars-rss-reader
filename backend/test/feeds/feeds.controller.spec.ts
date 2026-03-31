@@ -8,7 +8,7 @@ describe('FeedsController', () => {
   let service: FeedsService;
 
   const mockFeedResponse: FeedResponseDto = {
-    subscriptionId: 'sub1',
+    subscriptionId: '123e4567-e89b-12d3-a456-426614174001',
     updatedAt: '2024-01-01',
     articlesCount: 5,
   };
@@ -45,7 +45,7 @@ describe('FeedsController', () => {
 
   describe('updateFeedForSub', () => {
     it('should update feed for a specific subscription', async () => {
-      const subscriptionId = 'sub1';
+      const subscriptionId = '123e4567-e89b-12d3-a456-426614174001';
       mockFeedsService.update.mockResolvedValue(mockFeedResponse);
 
       const result = await controller.updateFeedForSub(subscriptionId);
@@ -57,7 +57,7 @@ describe('FeedsController', () => {
 
   describe('cleanupFeedForSub', () => {
     it('should cleanup articles for a specific subscription', async () => {
-      const subscriptionId = 'sub1';
+      const subscriptionId = '123e4567-e89b-12d3-a456-426614174001';
       const cleanupResponse = { ...mockFeedResponse, articlesCount: 10 };
       mockFeedsService.cleanupArticles.mockResolvedValue(cleanupResponse);
 

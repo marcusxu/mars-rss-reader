@@ -51,7 +51,7 @@ describe('SubscriptionsController', () => {
         category: 'Tech',
       };
       const expectedResult = {
-        id: '1',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         ...createDto,
         createdAt: '2024-01-01',
         updatedAt: '2024-01-01',
@@ -69,7 +69,7 @@ describe('SubscriptionsController', () => {
 
   describe('deleteSubscription', () => {
     it('should delete a subscription', async () => {
-      const subscriptionId = '1';
+      const subscriptionId = '123e4567-e89b-12d3-a456-426614174000';
       const expectedResult = {
         id: subscriptionId,
         message: 'Subscription 1 deleted successfully.',
@@ -87,7 +87,7 @@ describe('SubscriptionsController', () => {
 
   describe('updateSubscription', () => {
     it('should update a subscription', async () => {
-      const subscriptionId = '1';
+      const subscriptionId = '123e4567-e89b-12d3-a456-426614174000';
       const updateDto = { name: 'Updated Feed' };
       const expectedResult = {
         id: subscriptionId,
@@ -121,7 +121,7 @@ describe('SubscriptionsController', () => {
         totalPages: 1,
         data: [
           {
-            id: '1',
+            id: '123e4567-e89b-12d3-a456-426614174000',
             url: 'https://example.com/rss',
             name: 'Test Feed',
             createdAt: '2024-01-01',

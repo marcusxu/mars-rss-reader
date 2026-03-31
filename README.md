@@ -4,12 +4,20 @@
 
 # Mars RSS Reader
 
-A robust RSS Reader API built with NestJS framework. This service allows users to fetch and parse RSS feeds efficiently.
+A full-stack RSS Reader application with a NestJS backend and React frontend. The backend provides a robust API for managing RSS subscriptions and articles, while the frontend offers a clean user interface for reading feeds.
 
 ## Features
 
 - Manage RSS subscriptions
 - Fetch and parse RSS feeds
+- Batch article operations (mark multiple articles as read in a single request)
+- Optimized API with N+1 query prevention
+- Environment-based configuration
+
+## API Documentation
+
+- Swagger UI: `http://localhost:3000/api`
+- Health Check: `http://localhost:3000/health`
 
 ## Roadmap
 
@@ -62,7 +70,8 @@ npm install
 npm run start
 ```
 
-Open Browser and open `http://localhost:3001`.
+- Frontend: `http://localhost:3001`
+- Backend: `http://localhost:3000`
 
 ## Project Structure
 
@@ -71,6 +80,20 @@ Open Browser and open `http://localhost:3001`.
 |_frontend: A React frontend project.
 
 ```
+
+## Configuration
+
+### Frontend Environment Variables
+
+Create a `.env` file in the `frontend` directory (see `.env.example`):
+
+```env
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+### Backend Configuration
+
+The backend uses SQLite by default. Configuration can be modified in `backend/src/app.module.ts`.
 
 ## Contributing
 

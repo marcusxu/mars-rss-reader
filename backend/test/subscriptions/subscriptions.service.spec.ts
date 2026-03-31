@@ -52,7 +52,7 @@ describe('SubscriptionsService', () => {
       };
 
       const subscription = {
-        id: '1',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         ...createDto,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -71,7 +71,7 @@ describe('SubscriptionsService', () => {
       expect(mockRepository.save).toHaveBeenCalledWith(subscription);
       expect(result).toEqual(
         expect.objectContaining({
-          id: '1',
+          id: '123e4567-e89b-12d3-a456-426614174000',
           url: 'https://example.com/rss',
           name: 'Test Feed',
           description: 'Test Description',
@@ -87,7 +87,7 @@ describe('SubscriptionsService', () => {
       };
 
       const existingSubscription = {
-        id: '1',
+        id: '123e4567-e89b-12d3-a456-426614174000',
         ...createDto,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -103,7 +103,7 @@ describe('SubscriptionsService', () => {
 
   describe('remove', () => {
     it('should remove a subscription successfully', async () => {
-      const subscriptionId = '1';
+      const subscriptionId = '123e4567-e89b-12d3-a456-426614174000';
       const subscription = {
         id: subscriptionId,
         url: 'https://example.com/rss',
@@ -128,7 +128,7 @@ describe('SubscriptionsService', () => {
     });
 
     it('should throw NotFoundException if subscription not found', async () => {
-      const subscriptionId = '999';
+      const subscriptionId = '123e4567-e89b-12d3-a456-426614174999';
 
       mockRepository.findOne.mockResolvedValue(null);
 
@@ -140,7 +140,7 @@ describe('SubscriptionsService', () => {
 
   describe('update', () => {
     it('should update a subscription successfully', async () => {
-      const subscriptionId = '1';
+      const subscriptionId = '123e4567-e89b-12d3-a456-426614174000';
       const updateDto: UpdateSubscriptionDto = {
         name: 'Updated Feed',
         description: 'Updated Description',
@@ -170,7 +170,7 @@ describe('SubscriptionsService', () => {
       });
       expect(result).toEqual(
         expect.objectContaining({
-          id: '1',
+          id: '123e4567-e89b-12d3-a456-426614174000',
           name: 'Updated Feed',
           description: 'Updated Description',
         }),
@@ -178,7 +178,7 @@ describe('SubscriptionsService', () => {
     });
 
     it('should throw NotFoundException if subscription not found', async () => {
-      const subscriptionId = '999';
+      const subscriptionId = '123e4567-e89b-12d3-a456-426614174999';
       const updateDto: UpdateSubscriptionDto = {
         name: 'Updated Feed',
       };
@@ -202,7 +202,7 @@ describe('SubscriptionsService', () => {
 
       const subscriptions = [
         {
-          id: '1',
+          id: '123e4567-e89b-12d3-a456-426614174000',
           url: 'https://example1.com/rss',
           name: 'Test Feed 1',
           category: 'Tech',

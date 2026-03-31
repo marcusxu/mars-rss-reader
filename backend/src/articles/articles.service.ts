@@ -1,11 +1,13 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Article } from './entities/article.entity';
-import { FindOptionsWhere, ILike, Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { ArticleResponseDto } from './dto/article-response.dto';
 import { FindArticleDto } from './dto/find-article.dto';
 import { PaginationResponseDto } from 'src/common/pagination/pagination-response.dto';
+import { BatchUpdateResponseDto } from './dto/batch-update-response.dto';
+import { ValidationUtil } from 'src/common/utils/validation.util';
 
 @Injectable()
 export class ArticlesService {
@@ -14,6 +16,7 @@ export class ArticlesService {
   constructor(
     @InjectRepository(Article)
     private articleRepository: Repository<Article>,
+    private dataSource: DataSource,
   ) {}
 
   async update(
@@ -46,33 +49,75 @@ export class ArticlesService {
   async find(
     findArticleDto: FindArticleDto,
   ): Promise<PaginationResponseDto<Article>> {
+    if (findArticleDto.id) {
+      ValidationUtil.validateUUID(findArticleDto.id, 'id');
+    }
+    if (findArticleDto.subscriptionId) {
+      ValidationUtil.validateUUID(
+        findArticleDto.subscriptionId,
+        'subscriptionId',
+      );
+    }
+
     const page = findArticleDto?.page || 1;
     const perPage = findArticleDto?.perPage || 10;
 
     this.logger.log(
       `Attempting to find article: ${JSON.stringify(findArticleDto)}, page: ${page}, perPage: ${perPage}`,
     );
-    const where: FindOptionsWhere<Article> = {};
-    if (findArticleDto.author)
-      where.author = ILike(`%${findArticleDto.author}%`);
-    if (findArticleDto.content)
-      where.content = ILike(`%${findArticleDto.content}%`);
-    if (findArticleDto.isFavorite) where.isFavorite = findArticleDto.isFavorite;
-    if (findArticleDto.isRead) where.isRead = findArticleDto.isRead;
-    if (findArticleDto.link) where.link = findArticleDto.link;
-    if (findArticleDto.pubDate) where.pubDate = findArticleDto.pubDate;
-    if (findArticleDto.id) where.id = findArticleDto.id;
-    if (findArticleDto.subscriptionId)
-      where.subscription = { id: findArticleDto.subscriptionId };
-    if (findArticleDto.title) where.title = ILike(`%${findArticleDto.title}%`);
 
-    const [articles, total] = await this.articleRepository.findAndCount({
-      relations: ['subscription'],
-      where: where,
-      skip: (page - 1) * perPage,
-      take: perPage,
-      order: { createdAt: 'DESC' },
-    });
+    const queryBuilder = this.articleRepository
+      .createQueryBuilder('article')
+      .leftJoinAndSelect('article.subscription', 'subscription');
+
+    if (findArticleDto.author) {
+      queryBuilder.andWhere('article.author ILIKE :author', {
+        author: `%${findArticleDto.author}%`,
+      });
+    }
+    if (findArticleDto.content) {
+      queryBuilder.andWhere('article.content ILIKE :content', {
+        content: `%${findArticleDto.content}%`,
+      });
+    }
+    if (findArticleDto.isFavorite !== undefined) {
+      queryBuilder.andWhere('article.isFavorite = :isFavorite', {
+        isFavorite: findArticleDto.isFavorite,
+      });
+    }
+    if (findArticleDto.isRead !== undefined) {
+      queryBuilder.andWhere('article.isRead = :isRead', {
+        isRead: findArticleDto.isRead,
+      });
+    }
+    if (findArticleDto.link) {
+      queryBuilder.andWhere('article.link = :link', { link: findArticleDto.link });
+    }
+    if (findArticleDto.pubDate) {
+      queryBuilder.andWhere('article.pubDate = :pubDate', {
+        pubDate: findArticleDto.pubDate,
+      });
+    }
+    if (findArticleDto.id) {
+      queryBuilder.andWhere('article.id = :id', { id: findArticleDto.id });
+    }
+    if (findArticleDto.subscriptionId) {
+      queryBuilder.andWhere('subscription.id = :subscriptionId', {
+        subscriptionId: findArticleDto.subscriptionId,
+      });
+    }
+    if (findArticleDto.title) {
+      queryBuilder.andWhere('article.title ILIKE :title', {
+        title: `%${findArticleDto.title}%`,
+      });
+    }
+
+    queryBuilder
+      .orderBy('article.createdAt', 'DESC')
+      .skip((page - 1) * perPage)
+      .take(perPage);
+
+    const [articles, total] = await queryBuilder.getManyAndCount();
 
     const paginatedArticles = new PaginationResponseDto<Article>(
       page,
@@ -81,6 +126,90 @@ export class ArticlesService {
       articles,
     );
     return paginatedArticles;
+  }
+
+  async batchUpdate(
+    updateArticleDto: UpdateArticleDto,
+  ): Promise<BatchUpdateResponseDto> {
+    if (!updateArticleDto.ids || updateArticleDto.ids.length === 0) {
+      this.logger.warn('Batch update called with no article IDs');
+      return {
+        updatedCount: 0,
+        failedIds: [],
+        message: 'No article IDs provided',
+      };
+    }
+
+    ValidationUtil.validateUUIDs(updateArticleDto.ids, 'article IDs');
+
+    this.logger.log(
+      `Starting batch update for ${updateArticleDto.ids.length} articles`,
+    );
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    const failedIds: string[] = [];
+    const successIds: string[] = [];
+
+    try {
+      for (const id of updateArticleDto.ids) {
+        try {
+          const article = await queryRunner.manager.findOne(Article, {
+            where: { id },
+          });
+
+          if (!article) {
+            this.logger.warn(`Article not found: ${id}`);
+            failedIds.push(id);
+            continue;
+          }
+
+          if (updateArticleDto.isRead !== undefined) {
+            article.isRead = updateArticleDto.isRead;
+          }
+          if (updateArticleDto.isFavorite !== undefined) {
+            article.isFavorite = updateArticleDto.isFavorite;
+          }
+
+          await queryRunner.manager.save(article);
+          successIds.push(id);
+          this.logger.debug(`Successfully updated article: ${id}`);
+        } catch (error) {
+          this.logger.error(
+            `Failed to update article ${id}: ${error.message}`,
+            error.stack,
+          );
+          failedIds.push(id);
+        }
+      }
+
+      await queryRunner.commitTransaction();
+      this.logger.log(
+        `Batch update transaction committed: ${successIds.length} successful, ${failedIds.length} failed`,
+      );
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(
+        `Batch update transaction rolled back: ${error.message}`,
+        error.stack,
+      );
+
+      return {
+        updatedCount: 0,
+        failedIds: updateArticleDto.ids,
+        message: `Transaction failed: ${error.message}`,
+      };
+    } finally {
+      await queryRunner.release();
+    }
+
+    return {
+      updatedCount: successIds.length,
+      failedIds,
+      message: `Updated ${successIds.length} articles, ${failedIds.length} failed`,
+    };
   }
 
   private mapToResponseDto(article: Article): ArticleResponseDto {

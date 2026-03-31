@@ -9,15 +9,17 @@ import {
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
+import { IsCustomUUID } from 'src/common/decorators/is-uuid.decorator';
 
 export class FindArticleDto
   extends PaginationRequestDto
   implements Partial<BaseArticleDto>
 {
-  @IsString()
+  @IsCustomUUID({ message: 'Article ID must be a valid UUID' })
   @IsOptional()
   @ApiPropertyOptional({
     description: 'Article ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
   id?: string;
 
@@ -56,10 +58,11 @@ export class FindArticleDto
   })
   pubDate?: Date;
 
-  @IsString()
+  @IsCustomUUID({ message: 'Subscription ID must be a valid UUID' })
   @IsOptional()
   @ApiPropertyOptional({
     description: 'Feed subscription Id',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
   subscriptionId?: string;
 

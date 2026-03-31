@@ -3,38 +3,45 @@ import {
   Chip,
   CircularProgress,
   Container,
-  Fab,
+  Grid,
   Link,
   List,
   ListItem,
   Pagination,
   Stack,
+  TextField,
+  Tooltip,
   Typography,
+  Button,
+  IconButton,
+  ButtonGroup,
 } from '@mui/material';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
 import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import SearchIcon from '@mui/icons-material/Search';
 import { useArticles } from '../hooks/use-articles';
-
-// TODO: Add filtering
+import { formatDate } from '../utils/date-util';
 
 export function FeedsPage() {
   const {
     loading,
-    error,
     articles,
     currentPage,
     totalPages,
+    filterValue,
     updateArticles,
     handleRefresh,
     handleCleanup,
     handleChangeReadStatus,
     handleChangeFavoriteStatus,
     handleMarkAllAsRead,
+    handleFilterArticles,
+    setFilterValue,
   } = useArticles();
+
+  // TODO: Add filtering
 
   if (loading)
     return (
@@ -47,109 +54,118 @@ export function FeedsPage() {
         <CircularProgress />
       </Box>
     );
-  if (error)
-    return (
-      <div>
-        <Box>
-          <Typography>{error}</Typography>
-        </Box>
-      </div>
-    );
 
   return (
     <Container>
-      <List>
-        {articles.map((article) => (
-          <ListItem key={article.id}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                flexGrow: 1,
-              }}
-            >
-              <Link href={article.link} target="_blank">
-                <Typography>{article.title}</Typography>
-              </Link>
-              <Chip
-                label={article.subscription.name}
+      <Container>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item>
+            <Tooltip title="Search in feeds">
+              <IconButton
                 color="primary"
-                size="small"
-              ></Chip>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Chip
-                variant="outlined"
-                size="small"
-                clickable={true}
-                onClick={async () => {
-                  handleChangeReadStatus(article);
+                onClick={handleFilterArticles}
+                sx={{ width: 40, height: 40 }}
+              >
+                <SearchIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Grid>
+          <Grid item xs>
+            <TextField
+              fullWidth
+              size="small"
+              label="Search in feeds"
+              type="text"
+              value={filterValue}
+              onChange={(e) => setFilterValue(e.target.value)}
+              variant="standard"
+            />
+          </Grid>
+          <Grid item>
+            <Grid container spacing={0.5} justifyContent="space-evenly">
+              <Grid item>
+                <ButtonGroup variant="outlined" size="small">
+                  <Button onClick={handleRefresh}>Refresh</Button>
+                  <Button onClick={async () => handleMarkAllAsRead(articles)}>
+                    Read All
+                  </Button>
+                  <Button onClick={handleCleanup} color="error">
+                    Cleanup
+                  </Button>
+                </ButtonGroup>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+      </Container>
+      <Container>
+        <List>
+          {articles.map((article) => (
+            <ListItem key={article.id}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  flexGrow: 1,
                 }}
-                icon={
-                  article.isRead ? (
-                    <MarkEmailReadIcon />
-                  ) : (
-                    <MarkEmailUnreadIcon />
-                  )
-                }
-              ></Chip>
-              <Chip
-                variant="outlined"
-                size="small"
-                clickable={true}
-                onClick={async () => {
-                  handleChangeFavoriteStatus(article);
-                }}
-                icon={
-                  article.isFavorite ? <FavoriteIcon /> : <FavoriteBorderIcon />
-                }
-              ></Chip>
-            </Box>
-          </ListItem>
-        ))}
-      </List>
-      <Stack spacing={2}>
-        <Pagination
-          count={totalPages}
-          page={currentPage}
-          onChange={updateArticles}
-        />
-      </Stack>
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 16,
-          right: 16,
-          display: 'flex',
-          gap: 2,
-        }}
-      >
-        <Fab
-          onClick={handleRefresh}
-          variant="extended"
-          size="small"
-          color="primary"
-        >
-          <RefreshIcon /> Refresh
-        </Fab>
-        <Fab
-          onClick={async () => handleMarkAllAsRead(articles)}
-          variant="extended"
-          size="small"
-          color="secondary"
-        >
-          <MarkEmailReadIcon /> Mark All Read
-        </Fab>
-        <Fab
-          onClick={handleCleanup}
-          variant="extended"
-          size="small"
-          color="secondary"
-        >
-          <CleaningServicesIcon /> Cleanup
-        </Fab>
-      </Box>
+              >
+                <Link href={article.link} target="_blank" underline="hover">
+                  <Typography>{article.title}</Typography>
+                </Link>
+                <Typography color="textDisabled">
+                  {' '}
+                  {formatDate(article.pubDate)}
+                </Typography>
+                <Chip
+                  label={article.subscription.name}
+                  color="primary"
+                  size="small"
+                ></Chip>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Chip
+                  variant="outlined"
+                  size="small"
+                  clickable={true}
+                  onClick={async () => {
+                    handleChangeReadStatus(article);
+                  }}
+                  icon={
+                    article.isRead ? (
+                      <MarkEmailReadIcon />
+                    ) : (
+                      <MarkEmailUnreadIcon />
+                    )
+                  }
+                ></Chip>
+                <Chip
+                  variant="outlined"
+                  size="small"
+                  clickable={true}
+                  onClick={async () => {
+                    handleChangeFavoriteStatus(article);
+                  }}
+                  icon={
+                    article.isFavorite ? (
+                      <FavoriteIcon />
+                    ) : (
+                      <FavoriteBorderIcon />
+                    )
+                  }
+                ></Chip>
+              </Box>
+            </ListItem>
+          ))}
+        </List>
+        <Stack spacing={2}>
+          <Pagination
+            count={totalPages}
+            page={currentPage}
+            onChange={updateArticles}
+          />
+        </Stack>
+      </Container>
     </Container>
   );
 }

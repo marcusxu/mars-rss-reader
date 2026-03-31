@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api.config';
 
 interface Subscription {
   id: string;
@@ -13,9 +14,8 @@ interface SubscriptionResult {
   message: string;
 }
 export const getSubscriptions = async () => {
-  const response = await axios.get<Subscription>(
-    // TODO: use config instead of static url
-    'http://localhost:3000/subscriptions',
+  const response = await axios.get<Subscription[]>(
+    `${API_BASE_URL}/subscriptions`,
   );
   return response.data;
 };
@@ -27,24 +27,21 @@ export const addSubscription = async (
   category: string,
 ): Promise<SubscriptionResult> => {
   try {
-    const response = await axios.post<Subscription>(
-      'http://localhost:3000/subscriptions',
-      {
-        url: url,
-        name: name,
-        description: description,
-        category: category,
-      },
-    );
-    return { status: 201, message: response.data.message };
+    await axios.post<Subscription>(`${API_BASE_URL}/subscriptions`, {
+      url: url,
+      name: name,
+      description: description,
+      category: category,
+    });
+    return { status: 201, message: 'Subscription added successfully' };
   } catch (error) {
-    return { status: 500, message: error.toString() };
+    return { status: 500, message: String(error) };
   }
 };
 
 export const deleteSubscription = async (id: string) => {
   const response = await axios.delete<Subscription>(
-    'http://localhost:3000/subscriptions/' + id,
+    `${API_BASE_URL}/subscriptions/${id}`,
   );
   return response.data;
 };
