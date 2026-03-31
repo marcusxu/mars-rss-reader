@@ -1,12 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/exception_filters/http-exception.filter';
 import 'dotenv/config';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+
+  logger.log('Starting Mars RSS Reader API...');
 
   const config = new DocumentBuilder()
     .setTitle('RSS Reader API')
@@ -22,6 +25,18 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
-  await app.listen(process.env.PORT ?? 3000);
+
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+
+  logger.log(`🚀 Mars RSS Reader API is running on: http://localhost:${port}`);
+  logger.log(`📚 API Documentation: http://localhost:${port}/api`);
+  logger.log(`🏥 Health Check: http://localhost:${port}/health`);
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    logger.log('SIGTERM signal received: closing HTTP server');
+    app.close();
+  });
 }
 bootstrap();

@@ -8,10 +8,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, ILike, Repository } from 'typeorm';
 import { Subscription } from './entities/subscription.entity';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { UpdateSubscriptionDto } from './dto/update-subscription.dt';
+import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import { FindSubscriptionDto } from './dto/find-subscription.dto';
 import { PaginationResponseDto } from 'src/common/pagination/pagination-response.dto';
+import { DeleteSubscriptionResponseDto } from './dto/delete-subscription-response.dto';
 
 @Injectable()
 export class SubscriptionsService {
@@ -25,7 +26,11 @@ export class SubscriptionsService {
   async create(
     createSubscriptionDto: CreateSubscriptionDto,
   ): Promise<SubscriptionResponseDto> {
-    this.logger.log(`Attempting to create a new subscription`);
+    this.logger.log(
+      `Attempting to create a new subscription: ${createSubscriptionDto.name}`,
+    );
+
+    // Check for existing subscription with same URL
     const existingSubscription = await this.subscriptionsRepository.findOne({
       where: { url: createSubscriptionDto.url },
     });
@@ -37,22 +42,31 @@ export class SubscriptionsService {
         `Subscription with URL already exists: ${createSubscriptionDto.url}`,
       );
     }
+
     const newSubscription = this.subscriptionsRepository.create(
       createSubscriptionDto,
     );
-    await this.subscriptionsRepository.save(newSubscription);
-    this.logger.log(`Created new subscription with ID: ${newSubscription.id}`);
-    return this.mapToResponseDto(newSubscription);
+    const savedSubscription =
+      await this.subscriptionsRepository.save(newSubscription);
+    this.logger.log(
+      `Created new subscription with ID: ${savedSubscription.id}`,
+    );
+    return this.mapToResponseDto(savedSubscription);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string): Promise<DeleteSubscriptionResponseDto> {
     this.logger.log(`Attempting to remove subscription: ${id}`);
-    const result = await this.subscriptionsRepository.delete(id);
-    if (result.affected === 0) {
+    const subscription = await this.subscriptionsRepository.findOne({
+      where: { id },
+    });
+    if (!subscription) {
       this.logger.warn(`Subscription not found: ${id}`);
       throw new NotFoundException(`Subscription not found: ${id}`);
     }
+
+    await this.subscriptionsRepository.delete(id);
     this.logger.log(`Successfully removed subscription: ${id}`);
+    return { id, message: `Subscription ${id} deleted successfully.` };
   }
 
   async update(
@@ -67,6 +81,25 @@ export class SubscriptionsService {
       this.logger.warn(`Subscription not found: ${id}`);
       throw new NotFoundException(`Subscription not found: ${id}`);
     }
+
+    // Check for URL conflict if URL is being updated
+    if (
+      updateSubscriptionDto.url &&
+      updateSubscriptionDto.url !== subscription.url
+    ) {
+      const existingSubscription = await this.subscriptionsRepository.findOne({
+        where: { url: updateSubscriptionDto.url },
+      });
+      if (existingSubscription && existingSubscription.id !== id) {
+        this.logger.warn(
+          `Subscription with URL already exists: ${updateSubscriptionDto.url}`,
+        );
+        throw new ConflictException(
+          `Subscription with URL already exists: ${updateSubscriptionDto.url}`,
+        );
+      }
+    }
+
     Object.assign(subscription, updateSubscriptionDto);
     const updatedSubscription =
       await this.subscriptionsRepository.save(subscription);
@@ -99,12 +132,10 @@ export class SubscriptionsService {
         take: perPage,
         order: { createdAt: 'DESC' },
       });
-    if (subscriptions?.length === 0) {
-      this.logger.warn(
+
+    if (subscriptions.length === 0) {
+      this.logger.log(
         `No subscriptions found matching the criteria: ${JSON.stringify(findSubscriptionDto)}`,
-      );
-      throw new NotFoundException(
-        'No subscriptions found matching the criteria',
       );
     }
 

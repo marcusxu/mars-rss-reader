@@ -22,7 +22,7 @@ export class FeedsController {
   @ApiOperation({ summary: 'Cleanup articles for a subscription' })
   @ApiParam({ name: 'id', description: 'Subscription ID' })
   async cleanupFeedForSub(@Param('id') id: string): Promise<FeedResponseDto> {
-    this.logger.log(`Attempting to delete subscription: ${id}`);
+    this.logger.log(`Attempting to cleanup articles for subscription: ${id}`);
     return await this.feedsService.cleanupArticles(id);
   }
 
@@ -36,7 +36,7 @@ export class FeedsController {
   @Patch('cleanup-all')
   @ApiOperation({ summary: 'Cleanup articles for all subscriptions' })
   async cleanupFeedForAll(): Promise<FeedResponseDto> {
-    this.logger.log(`Attempting to delete subscription for all subscriptions`);
+    this.logger.log('Attempting to cleanup articles for all subscriptions');
     return await this.feedsService.cleanupAll();
   }
 }

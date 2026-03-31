@@ -1,0 +1,28 @@
+{
+  "folders": [
+    {
+      "name": "Backend",
+      "path": "./backend",
+    },
+    {
+      "name": "Frontend",
+      "path": "./frontend",
+    },
+    {
+      "name": "Shared",
+      "path": "./shared",
+    },
+  ],
+  "settings": {
+    "jest.disabledWorkspaceFolders": ["Frontend", "Shared"],
+    "typescript.preferences.includePackageJsonAutoImports": "on",
+  },
+  "extensions": {
+    "recommendations": [
+      "orta.vscode-jest",
+      "ms-vscode.vscode-typescript-next",
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+    ],
+  },
+}

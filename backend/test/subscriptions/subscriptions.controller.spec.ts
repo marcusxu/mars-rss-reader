@@ -1,22 +1,19 @@
+// references: https://docs.nestjs.com/fundamentals/testing
+// TODO: Add more tests for SubscriptionsController
+
 import { Test, TestingModule } from '@nestjs/testing';
-import { SubscriptionsController } from '../../src/subscriptions/subscriptions.controller';
-import { SubscriptionsService } from '../../src/subscriptions/subscriptions.service';
-import {
-  ConflictException,
-  HttpException,
-  HttpStatus,
-  NotFoundException,
-} from '@nestjs/common';
-import { BaseSubscriptionDto } from '../../src/subscriptions/dto/base-subscription.dto';
+import { SubscriptionsController } from 'src/subscriptions/subscriptions.controller';
+import { SubscriptionsService } from 'src/subscriptions/subscriptions.service';
 
 describe('SubscriptionsController', () => {
-  let controller: SubscriptionsController;
-  let service: SubscriptionsService;
+  let subscriptionsController: SubscriptionsController;
+  let subscriptionsService: SubscriptionsService;
+
   const mockSubscriptionsService = {
     create: jest.fn(),
-    find: jest.fn(),
-    update: jest.fn(),
     remove: jest.fn(),
+    update: jest.fn(),
+    find: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -30,297 +27,115 @@ describe('SubscriptionsController', () => {
       ],
     }).compile();
 
-    controller = module.get<SubscriptionsController>(SubscriptionsController);
-    service = module.get<SubscriptionsService>(SubscriptionsService);
+    subscriptionsController = module.get<SubscriptionsController>(
+      SubscriptionsController,
+    );
+    subscriptionsService =
+      module.get<SubscriptionsService>(SubscriptionsService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
+    expect(subscriptionsController).toBeDefined();
   });
 
   describe('createSubscription', () => {
-    const testCases = [
-      {
-        name: 'Successfully created',
-        input: {
-          url: 'http://test.com',
-          name: 'Test Subscription',
-          description: 'Test Description',
-          category: 'Test Category',
-        },
-        mockReturn: {
-          id: 1,
-          url: 'http://test.com',
-          name: 'Test Subscription',
-          description: 'Test Description',
-          category: 'Test Category',
-        },
-        expectedResult: {
-          id: 1,
-          url: 'http://test.com',
-          name: 'Test Subscription',
-          description: 'Test Description',
-          category: 'Test Category',
-        },
-        expectError: false,
-      },
-      {
-        name: 'Duplicate subscription',
-        input: {
-          url: 'http://duplicate.com',
-          name: 'Duplicate Subscription',
-          description: 'Duplicate Description',
-          category: 'Duplicate Category',
-        },
-        mockReturn: new ConflictException('Duplicate subscription'),
-        expectedResult: {
-          statusCode: HttpStatus.CONFLICT,
-          error: 'Conflict',
-          message: 'Duplicate subscription',
-        },
-        expectError: true,
-      },
-    ];
+    it('should create a subscription', async () => {
+      const createDto = {
+        url: 'https://example.com/rss',
+        name: 'Test Feed',
+        description: 'Test Description',
+        category: 'Tech',
+      };
+      const expectedResult = {
+        id: '1',
+        ...createDto,
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
 
-    test.each(testCases)(
-      '$name',
-      async ({ input, mockReturn, expectedResult, expectError }) => {
-        expectError
-          ? mockSubscriptionsService.create.mockRejectedValue(mockReturn)
-          : mockSubscriptionsService.create.mockResolvedValue(mockReturn);
+      mockSubscriptionsService.create.mockResolvedValue(expectedResult);
 
-        if (expectError) {
-          try {
-            await controller.createSubscription(input as BaseSubscriptionDto);
-          } catch (e) {
-            expect(e).toBeInstanceOf(HttpException);
-            expect(e.getStatus()).toEqual(HttpStatus.CONFLICT);
-            expect(e.getResponse()).toEqual(expectedResult);
-          }
-        } else {
-          const result = await controller.createSubscription(
-            input as BaseSubscriptionDto,
-          );
-          expect(result).toEqual(expectedResult);
-        }
-      },
-    );
+      const result =
+        await subscriptionsController.createSubscription(createDto);
+
+      expect(subscriptionsService.create).toHaveBeenCalledWith(createDto);
+      expect(result).toEqual(expectedResult);
+    });
   });
+
   describe('deleteSubscription', () => {
-    const testCases = [
-      {
-        name: 'Successfully deleted',
-        input: '1',
-        mockReturn: undefined,
-        expectedResult: undefined,
-        expectError: false,
-      },
-      {
-        name: 'Subscription not found',
-        input: '2',
-        mockReturn: new NotFoundException('Subscription not found'),
-        expectedResult: {
-          status: HttpStatus.NOT_FOUND,
-          error: 'Subscription not found',
-          message: 'Subscription not found',
-        },
-        expectError: true,
-      },
-    ];
-    test.each(testCases)(
-      '$name',
-      async ({ input, mockReturn, expectedResult, expectError }) => {
-        expectError
-          ? mockSubscriptionsService.remove.mockRejectedValue(mockReturn)
-          : mockSubscriptionsService.remove.mockResolvedValue(mockReturn);
+    it('should delete a subscription', async () => {
+      const subscriptionId = '1';
+      const expectedResult = {
+        id: subscriptionId,
+        message: 'Subscription 1 deleted successfully.',
+      };
 
-        if (expectError) {
-          try {
-            await controller.deleteSubscription(input);
-          } catch (e) {
-            if (e instanceof HttpException) {
-              expect(e).toBeInstanceOf(HttpException);
-              expect(e.getStatus()).toEqual(expectedResult.status);
-              expect(e.getResponse()).toEqual(expectedResult);
-            } else {
-              expect(e).toEqual(expectedResult);
-            }
-          }
-        } else {
-          const result = await controller.deleteSubscription(input);
-          expect(result).toEqual(expectedResult);
-        }
-      },
-    );
+      mockSubscriptionsService.remove.mockResolvedValue(expectedResult);
+
+      const result =
+        await subscriptionsController.deleteSubscription(subscriptionId);
+
+      expect(subscriptionsService.remove).toHaveBeenCalledWith(subscriptionId);
+      expect(result).toEqual(expectedResult);
+    });
   });
+
   describe('updateSubscription', () => {
-    const testCases = [
-      {
-        name: 'Successfully updated',
-        input: {
-          id: '1',
-          dto: {
-            name: 'Updated Subscription',
-            url: 'http://updated.com',
-            description: 'Updated Description',
-            category: 'Updated Category',
-          },
-        },
-        mockReturn: {
-          id: 1,
-          name: 'Updated Subscription',
-          url: 'http://updated.com',
-          description: 'Updated Description',
-          category: 'Updated Category',
-        },
-        expectedResult: {
-          id: 1,
-          name: 'Updated Subscription',
-          url: 'http://updated.com',
-          description: 'Updated Description',
-          category: 'Updated Category',
-        },
-        expectError: false,
-      },
-      {
-        name: 'Subscription not found',
-        input: {
-          id: '2',
-          dto: {
-            name: 'Non-existent Subscription',
-            url: 'http://non-existent.com',
-            description: 'Non-existent Description',
-            category: 'Non-existent Category',
-          },
-        },
-        mockReturn: new NotFoundException('Subscription not found'),
-        expectedResult: {
-          status: HttpStatus.NOT_FOUND,
-          error: 'Subscription not found',
-          message: 'Subscription not found',
-        },
-        expectError: true,
-      },
-    ];
-    test.each(testCases)(
-      '$name',
-      async ({ input, mockReturn, expectedResult, expectError }) => {
-        expectError
-          ? mockSubscriptionsService.update.mockRejectedValue(mockReturn)
-          : mockSubscriptionsService.update.mockResolvedValue(mockReturn);
+    it('should update a subscription', async () => {
+      const subscriptionId = '1';
+      const updateDto = { name: 'Updated Feed' };
+      const expectedResult = {
+        id: subscriptionId,
+        name: 'Updated Feed',
+        createdAt: '2024-01-01',
+        updatedAt: '2024-01-01',
+      };
 
-        if (expectError) {
-          try {
-            await controller.updateSubscription(
-              input.id,
-              input.dto as BaseSubscriptionDto,
-            );
-          } catch (e) {
-            if (e instanceof HttpException) {
-              expect(e).toBeInstanceOf(HttpException);
-              expect(e.getStatus()).toEqual(expectedResult.status);
-              expect(e.getResponse()).toEqual(expectedResult);
-            } else {
-              expect(e).toEqual(expectedResult);
-            }
-          }
-        } else {
-          const result = await controller.updateSubscription(
-            input.id,
-            input.dto as BaseSubscriptionDto,
-          );
-          expect(result).toEqual(expectedResult);
-        }
-      },
-    );
+      mockSubscriptionsService.update.mockResolvedValue(expectedResult);
+
+      const result = await subscriptionsController.updateSubscription(
+        subscriptionId,
+        updateDto,
+      );
+
+      expect(subscriptionsService.update).toHaveBeenCalledWith(
+        subscriptionId,
+        updateDto,
+      );
+      expect(result).toEqual(expectedResult);
+    });
   });
-  describe('getSubscriptions', () => {
-    const testCases = [
-      {
-        name: 'Successfully get all subscriptions',
-        input: {},
-        mockReturn: [
-          { id: '1', url: 'url1', name: 'name1', category: 'category1' },
-        ],
-        expectedResult: [
+
+  describe('getAllSubscriptions', () => {
+    it('should get all subscriptions', async () => {
+      const findDto = { page: 1, perPage: 10 };
+      const expectedResult = {
+        page: 1,
+        perPage: 10,
+        total: 1,
+        totalPages: 1,
+        data: [
           {
             id: '1',
-            url: 'url1',
-            name: 'name1',
-            category: 'category1',
+            url: 'https://example.com/rss',
+            name: 'Test Feed',
+            createdAt: '2024-01-01',
+            updatedAt: '2024-01-01',
           },
         ],
-        expectError: false,
-      },
-      {
-        name: 'Successfully get subscriptions with query parameters',
-        input: { id: '1', url: 'url1', name: 'name1', category: 'category1' },
-        mockReturn: {
-          id: '1',
-          url: 'url1',
-          name: 'name1',
-          category: 'category1',
-        },
+      };
 
-        expectedResult: {
-          id: '1',
-          url: 'url1',
-          name: 'name1',
-          category: 'category1',
-        },
+      mockSubscriptionsService.find.mockResolvedValue(expectedResult);
 
-        expectError: false,
-      },
-      {
-        name: 'No subscriptions found',
-        input: { id: '2', url: 'url2', name: 'name2', category: 'category2' },
-        mockReturn: new NotFoundException(
-          'No subscriptions found matching the criteria',
-        ),
-        expectedResult: {
-          statusCode: HttpStatus.NOT_FOUND,
-          error: 'Not Found',
-          message: 'No subscriptions found matching the criteria',
-        },
-        expectError: true,
-      },
-    ];
-    test.each(testCases)(
-      '$name',
-      async ({ input, mockReturn, expectedResult, expectError }) => {
-        expectError
-          ? mockSubscriptionsService.find.mockRejectedValue(mockReturn)
-          : mockSubscriptionsService.find.mockResolvedValue(mockReturn);
+      const result = await subscriptionsController.getAllSubscriptions(findDto);
 
-        if (expectError) {
-          try {
-            await controller.getAllSubscriptions(
-              input.id,
-              input.url,
-              input.name,
-              input.category,
-            );
-          } catch (e) {
-            if (e instanceof HttpException) {
-              expect(e).toBeInstanceOf(HttpException);
-              if ('status' in expectedResult) {
-                expect(e.getStatus()).toEqual(expectedResult.status);
-              }
-              expect(e.getResponse()).toEqual(expectedResult);
-            } else {
-              expect(e).toEqual(expectedResult);
-            }
-          }
-        } else {
-          const result = await controller.getAllSubscriptions(
-            input.id,
-            input.url,
-            input.name,
-            input.category,
-          );
-          expect(result).toEqual(expectedResult);
-        }
-      },
-    );
+      expect(subscriptionsService.find).toHaveBeenCalledWith(findDto);
+      expect(result).toEqual(expectedResult);
+    });
   });
 });

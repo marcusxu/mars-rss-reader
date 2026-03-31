@@ -14,9 +14,10 @@ import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Subscription } from './entities/subscription.entity';
 import { SubscriptionResponseDto } from './dto/subscription-response.dto';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { UpdateSubscriptionDto } from './dto/update-subscription.dt';
+import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { FindSubscriptionDto } from './dto/find-subscription.dto';
 import { PaginationResponseDto } from 'src/common/pagination/pagination-response.dto';
+import { DeleteSubscriptionResponseDto } from './dto/delete-subscription-response.dto';
 
 @ApiTags('Subscriptions')
 @Controller('subscriptions')
@@ -31,15 +32,20 @@ export class SubscriptionsController {
   async createSubscription(
     @Body() createSubscriptionDto: CreateSubscriptionDto,
   ): Promise<SubscriptionResponseDto> {
-    this.logger.log(`Attempting to create a new subscription`);
+    this.logger.log(
+      `Attempting to create a new subscription: ${JSON.stringify(createSubscriptionDto)}`,
+    );
     return this.subscriptionsService.create(createSubscriptionDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Remove a subscription by ID' })
-  async deleteSubscription(@Param('id') id: string): Promise<void> {
+  async deleteSubscription(
+    @Param('id') id: string,
+  ): Promise<DeleteSubscriptionResponseDto> {
     this.logger.log(`Attempting to remove subscription: ${id}`);
-    await this.subscriptionsService.remove(id);
+    const result = await this.subscriptionsService.remove(id);
+    return result;
   }
 
   @Patch(':id')

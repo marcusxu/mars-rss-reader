@@ -8,7 +8,7 @@ export class UpdateSubscriptionDto implements Partial<BaseSubscriptionDto> {
   @ApiPropertyOptional({
     description: 'Valid RSS feed URL',
   })
-  ur?: string;
+  url?: string;
 
   @IsString()
   @IsOptional()

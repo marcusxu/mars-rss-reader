@@ -10,9 +10,10 @@ import { ArticlesModule } from './articles/articles.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'sqlite',
-      database: 'mars_rss_reader.sqlite',
+      database: process.env.DATABASE_PATH || 'mars_rss_reader.sqlite',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // Only for dev env
+      synchronize: process.env.NODE_ENV !== 'production', // Only for dev/test env
+      logging: process.env.NODE_ENV === 'development',
     }),
     SubscriptionsModule,
     FeedsModule,
@@ -21,4 +22,4 @@ import { ArticlesModule } from './articles/articles.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

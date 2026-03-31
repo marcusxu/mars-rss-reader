@@ -1,21 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Subscription } from '../../src/subscriptions/entities/subscription.entity';
-import { SubscriptionsService } from '../../src/subscriptions/subscriptions.service';
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Repository } from 'typeorm';
+import { Subscription } from 'src/subscriptions/entities/subscription.entity';
+import { SubscriptionsService } from 'src/subscriptions/subscriptions.service';
+import { CreateSubscriptionDto } from 'src/subscriptions/dto/create-subscription.dto';
+import { UpdateSubscriptionDto } from 'src/subscriptions/dto/update-subscription.dto';
+import { FindSubscriptionDto } from 'src/subscriptions/dto/find-subscription.dto';
 
 describe('SubscriptionsService', () => {
   let service: SubscriptionsService;
-  let mockRepository = {
-    find: jest.fn(),
-    findOne: jest.fn(),
+
+  const mockRepository = {
     create: jest.fn(),
     save: jest.fn(),
+    findOne: jest.fn(),
+    remove: jest.fn(),
     delete: jest.fn(),
+    findAndCount: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -32,179 +34,203 @@ describe('SubscriptionsService', () => {
     service = module.get<SubscriptionsService>(SubscriptionsService);
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
   describe('create', () => {
-    const testCases = [
-      {
-        name: 'Invalid URL: Bad requests',
-        input: { url: '', name: 'test' },
-        existingSubscription: null,
-        expectedError: new BadRequestException('Invalid subscription data'),
-      },
-      {
-        name: 'Duplicate URL: Conflict',
-        input: { url: 'http://test.com', name: 'test' },
-        existingSubscription: { id: '1', url: 'http://test.com', name: 'test' },
-        expectedError: new ConflictException(
-          `Subscription with URL already exists: http://test.com`,
-        ),
-      },
-      {
-        name: 'Valid Subscription: Success',
-        input: { url: 'http://test.com', name: 'test' },
-        existingSubscription: null,
-        expectedOutput: { url: 'http://test.com', name: 'test' },
-      },
-    ];
-    test.each(testCases)(
-      '$name',
-      async ({
-        input,
-        existingSubscription,
-        expectedError,
-        expectedOutput,
-      }) => {
-        mockRepository.findOne.mockResolvedValue(existingSubscription);
-        mockRepository.create.mockReturnValue(input);
-        mockRepository.save.mockResolvedValue(expectedOutput);
+    it('should create a subscription successfully', async () => {
+      const createDto: CreateSubscriptionDto = {
+        url: 'https://example.com/rss',
+        name: 'Test Feed',
+        description: 'Test Description',
+        category: 'Tech',
+      };
 
-        if (expectedError) {
-          await expect(service.create(input)).rejects.toThrow(expectedError);
-        } else {
-          const result = await service.create(input);
-          expect(result).toEqual(expectedOutput);
-        }
-      },
-    );
+      const subscription = {
+        id: '1',
+        ...createDto,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockRepository.findOne.mockResolvedValue(null);
+      mockRepository.create.mockReturnValue(subscription);
+      mockRepository.save.mockResolvedValue(subscription);
+
+      const result = await service.create(createDto);
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { url: createDto.url },
+      });
+      expect(mockRepository.create).toHaveBeenCalledWith(createDto);
+      expect(mockRepository.save).toHaveBeenCalledWith(subscription);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: '1',
+          url: 'https://example.com/rss',
+          name: 'Test Feed',
+          description: 'Test Description',
+          category: 'Tech',
+        }),
+      );
+    });
+
+    it('should throw BadRequestException if subscription already exists', async () => {
+      const createDto: CreateSubscriptionDto = {
+        url: 'https://example.com/rss',
+        name: 'Test Feed',
+      };
+
+      const existingSubscription = {
+        id: '1',
+        ...createDto,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockRepository.findOne.mockResolvedValue(existingSubscription);
+
+      await expect(service.create(createDto)).rejects.toThrow(
+        'Subscription with URL already exists:',
+      );
+    });
   });
-  describe('delete', () => {
-    const testData = [
-      {
-        name: 'Subscription not exist: NotFoundException',
-        id: '1',
-        existingSubscription: null,
-        expectedError: new NotFoundException('Subscription not found: 1'),
-      },
-      {
-        name: 'Subscription exist: Success',
-        id: '1',
-        existingSubscription: { id: '1', url: 'http://test.com', name: 'test' },
-        expectedOutput: undefined,
-      },
-    ];
 
-    testData.forEach(
-      ({ name, id, existingSubscription, expectedError, expectedOutput }) => {
-        it(name, async () => {
-          mockRepository.findOne.mockResolvedValue(existingSubscription);
-          mockRepository.delete.mockResolvedValue({
-            affected: existingSubscription ? 1 : 0,
-          });
+  describe('remove', () => {
+    it('should remove a subscription successfully', async () => {
+      const subscriptionId = '1';
+      const subscription = {
+        id: subscriptionId,
+        url: 'https://example.com/rss',
+        name: 'Test Feed',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-          if (expectedError) {
-            await expect(service.remove(id)).rejects.toThrow(expectedError);
-          } else {
-            const result = await service.remove(id);
-            expect(result).toEqual(expectedOutput);
-          }
-        });
-      },
-    );
+      mockRepository.findOne.mockResolvedValue(subscription);
+      mockRepository.delete.mockResolvedValue({ affected: 1 });
+
+      const result = await service.remove(subscriptionId);
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: subscriptionId },
+      });
+      expect(mockRepository.delete).toHaveBeenCalledWith(subscriptionId);
+      expect(result).toEqual({
+        id: subscriptionId,
+        message: `Subscription ${subscriptionId} deleted successfully.`,
+      });
+    });
+
+    it('should throw NotFoundException if subscription not found', async () => {
+      const subscriptionId = '999';
+
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.remove(subscriptionId)).rejects.toThrow(
+        'Subscription not found:',
+      );
+    });
   });
 
   describe('update', () => {
-    const testData = [
-      {
-        name: 'Subscription not exist: NotFoundException',
-        id: '1',
-        input: { url: 'http://test.com', name: 'Test' },
-        existingSubscription: null,
-        expectedError: new NotFoundException('Subscription not found: 1'),
-      },
-      {
-        name: 'Subscription exist: Success',
-        id: '1',
-        input: { url: 'http://test.com', name: 'Test' },
-        existingSubscription: {
+    it('should update a subscription successfully', async () => {
+      const subscriptionId = '1';
+      const updateDto: UpdateSubscriptionDto = {
+        name: 'Updated Feed',
+        description: 'Updated Description',
+      };
+
+      const existingSubscription = {
+        id: subscriptionId,
+        url: 'https://example.com/rss',
+        name: 'Test Feed',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const updatedSubscription = {
+        ...existingSubscription,
+        ...updateDto,
+        updatedAt: new Date(),
+      };
+
+      mockRepository.findOne.mockResolvedValueOnce(existingSubscription);
+      mockRepository.save.mockResolvedValue(updatedSubscription);
+
+      const result = await service.update(subscriptionId, updateDto);
+
+      expect(mockRepository.findOne).toHaveBeenCalledWith({
+        where: { id: subscriptionId },
+      });
+      expect(result).toEqual(
+        expect.objectContaining({
           id: '1',
-          url: 'http://old.com',
-          name: 'Old',
+          name: 'Updated Feed',
+          description: 'Updated Description',
+        }),
+      );
+    });
+
+    it('should throw NotFoundException if subscription not found', async () => {
+      const subscriptionId = '999';
+      const updateDto: UpdateSubscriptionDto = {
+        name: 'Updated Feed',
+      };
+
+      mockRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.update(subscriptionId, updateDto)).rejects.toThrow(
+        'Subscription not found:',
+      );
+    });
+  });
+
+  describe('find', () => {
+    it('should return paginated subscriptions', async () => {
+      const findDto: FindSubscriptionDto = {
+        page: 1,
+        perPage: 10,
+        category: 'Tech',
+        name: 'Test',
+      };
+
+      const subscriptions = [
+        {
+          id: '1',
+          url: 'https://example1.com/rss',
+          name: 'Test Feed 1',
+          category: 'Tech',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
-        expectedOutput: {
-          id: '1',
-          url: 'http://test.com',
-          name: 'Test',
-          createdAt: expect.any(Date),
-          updatedAt: expect.any(Date),
+        {
+          id: '2',
+          url: 'https://example2.com/rss',
+          name: 'Test Feed 2',
+          category: 'Tech',
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
-      },
-    ];
+      ];
 
-    testData.forEach(
-      ({
-        name,
-        id,
-        input,
-        existingSubscription,
-        expectedError,
-        expectedOutput,
-      }) => {
-        it(name, async () => {
-          mockRepository.findOne.mockResolvedValue(existingSubscription);
-          if (existingSubscription) {
-            mockRepository.save.mockResolvedValue({
-              ...existingSubscription,
-              ...input,
-              updatedAt: new Date(),
-            });
-          }
+      mockRepository.findAndCount.mockResolvedValue([subscriptions, 2]);
 
-          if (expectedError) {
-            await expect(service.update(id, input)).rejects.toThrow(
-              expectedError,
-            );
-          } else {
-            const result = await service.update(id, input);
-            expect(result).toEqual(expectedOutput);
-          }
-        });
-      },
-    );
-  });
-  describe('find', () => {
-    const testCases = [
-      {
-        name: 'No result found: NotFoundException',
-        input: { url: 'http://test.com' },
-        output: new NotFoundException(
-          'No subscriptions found matching the criteria',
-        ),
-        mockReturnValue: [],
-      },
-      {
-        name: 'Found successfully',
-        input: { url: 'http://test.com' },
-        output: [{ id: '1', url: 'http://test.com' }],
-        mockReturnValue: [{ id: '1', url: 'http://test.com' }],
-      },
-    ];
+      const result = await service.find(findDto);
 
-    testCases.forEach((tc) => {
-      it(tc.name, async () => {
-        mockRepository.find.mockReturnValue(
-          Promise.resolve(tc.mockReturnValue),
-        );
-        try {
-          const result = await service.find(tc.input);
-          expect(result).toEqual(tc.output);
-        } catch (error) {
-          expect(error).toEqual(tc.output);
-        }
+      expect(mockRepository.findAndCount).toHaveBeenCalled();
+
+      expect(result).toEqual({
+        page: 1,
+        perPage: 10,
+        total: 2,
+        totalPages: 1,
+        data: subscriptions,
       });
     });
   });

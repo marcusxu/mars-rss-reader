@@ -1,4 +1,4 @@
-// src/articles/dto/create-article.dto.ts
+// src/articles/dto/base-article.dto.ts
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {

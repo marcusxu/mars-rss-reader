@@ -1,0 +1,9 @@
+{
+  "jest.jestCommandLine": "npx jest --config jest.config.js",
+  "jest.rootPath": "backend",
+  "jest.pathToJest": "node_modules/.bin/jest",
+  "jest.pathToConfig": "jest.config.js",
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "jest.runMode": "on-demand",
+  "jest.useDashedArgs": true
+}
