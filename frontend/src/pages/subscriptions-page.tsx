@@ -1,182 +1,144 @@
-import { useEffect, useState } from 'react';
-import {
-  getSubscriptions,
-  addSubscription,
-  deleteSubscription,
-} from '../services/subscription-service';
-import {
-  Button,
-  ButtonGroup,
-  Chip,
-  Container,
-  Link,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-
-interface Subscription {
-  id: string;
-  url: string;
-  name: string;
-  description?: string;
-  category?: string;
-}
+import { useState } from 'react';
+import { Box, Typography, Button } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
+import { useSubscriptions, useToast } from '../hooks';
+import { SubscriptionList } from '../components/subscription/subscription-list';
+import { SubscriptionForm } from '../components/subscription/subscription-form';
+import { EmptyState } from '../components/common/empty-state';
+import { ConfirmDialog } from '../components/common/confirm-dialog';
+import { Loading } from '../components/common/loading';
+import { Subscription, CreateSubscriptionRequest, UpdateSubscriptionRequest } from '../types';
+import RssFeedIcon from '@mui/icons-material/RssFeed';
 
 export function SubscriptionsPage() {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [newSubUrl, setNewSubUrl] = useState('');
-  const [newSubName, setNewSubName] = useState('');
-  const [newSubDescription, setNewSubDescription] = useState('');
-  const [newSubCategory, setNewSubCategory] = useState('');
-  const [inputErrorState, setInputErrorState] = useState(false);
+  const toast = useToast();
+  const {
+    loading,
+    subscriptions,
+    createSubscription,
+    updateSubscription,
+    deleteSubscription,
+  } = useSubscriptions();
 
-  const fetchSubscriptions = async () => {
-    const response = await getSubscriptions();
-    setSubscriptions(response);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [subscriptionToDelete, setSubscriptionToDelete] = useState<Subscription | null>(null);
+
+  const handleCreateClick = () => {
+    setFormMode('create');
+    setSelectedSubscription(null);
+    setFormOpen(true);
   };
-  useEffect(() => {
-    fetchSubscriptions();
-  }, []);
 
-  const handleAddSub = async () => {
-    const response = await addSubscription(
-      newSubUrl,
-      newSubName,
-      newSubDescription,
-      newSubCategory,
-    );
-    if (response.status == 201) {
-      setNewSubUrl('');
-      setNewSubName('');
-      setNewSubDescription('');
-      setNewSubCategory('');
-      setInputErrorState(false);
-      fetchSubscriptions();
+  const handleEditClick = (subscription: Subscription) => {
+    setFormMode('edit');
+    setSelectedSubscription(subscription);
+    setFormOpen(true);
+  };
+
+  const handleDeleteClick = (subscription: Subscription) => {
+    setSubscriptionToDelete(subscription);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleFormSubmit = async (data: CreateSubscriptionRequest | UpdateSubscriptionRequest) => {
+    let result;
+
+    if (formMode === 'create') {
+      result = await createSubscription(data as CreateSubscriptionRequest);
+      if (result.success) {
+        toast.showToast('Subscription added successfully', 'success');
+      } else {
+        toast.showToast(result.error?.message || 'Failed to add subscription', 'error');
+      }
     } else {
-      setInputErrorState(true);
+      result = await updateSubscription(
+        selectedSubscription!.id,
+        data as UpdateSubscriptionRequest
+      );
+      if (result.success) {
+        toast.showToast('Subscription updated successfully', 'success');
+      } else {
+        toast.showToast(result.error?.message || 'Failed to update subscription', 'error');
+      }
+    }
+
+    return result.success;
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!subscriptionToDelete) return;
+
+    const result = await deleteSubscription(subscriptionToDelete.id);
+    setDeleteDialogOpen(false);
+    setSubscriptionToDelete(null);
+
+    if (result.success) {
+      toast.showToast('Subscription deleted successfully', 'success');
+    } else {
+      toast.showToast(result.error?.message || 'Failed to delete subscription', 'error');
     }
   };
 
-  const handleDeleteSub = async (id: string) => {
-    const isConfirmed = window.confirm('Confirm to delete subscription?' + id);
-    if (isConfirmed) {
-      await deleteSubscription(id);
-      fetchSubscriptions();
-    }
-  };
-
-  // TODO: Implement handleModifySub
-  const handleModifySub = async (subscriptionId: string) => {
-    console.log('Modify subscription with id:', subscriptionId);
-  };
+  if (loading) {
+    return <Loading message="Loading subscriptions..." />;
+  }
 
   return (
-    <Container maxWidth="lg">
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell align="center">Name</TableCell>
-              <TableCell align="center">Url</TableCell>
-              <TableCell align="center">Description</TableCell>
-              <TableCell align="center">Category</TableCell>
-              <TableCell align="center">Operation</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            <TableRow>
-              <TableCell>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Name"
-                  type="text"
-                  value={newSubName}
-                  onChange={(e) => setNewSubName(e.target.value)}
-                  error={inputErrorState}
-                ></TextField>
-              </TableCell>
-              <TableCell>
-                <TextField
-                  fullWidth
-                  size="small"
-                  required
-                  label="Url"
-                  type="text"
-                  value={newSubUrl}
-                  onChange={(e) => setNewSubUrl(e.target.value)}
-                  error={inputErrorState}
-                ></TextField>
-              </TableCell>
-              <TableCell>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Description"
-                  type="text"
-                  value={newSubDescription}
-                  onChange={(e) => setNewSubDescription(e.target.value)}
-                  error={inputErrorState}
-                ></TextField>
-              </TableCell>
-              <TableCell>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Category"
-                  type="text"
-                  value={newSubCategory}
-                  onChange={(e) => setNewSubCategory(e.target.value)}
-                  error={inputErrorState}
-                ></TextField>
-              </TableCell>
-              <TableCell>
-                <Button onClick={handleAddSub}>Add</Button>
-              </TableCell>
-            </TableRow>
-            {subscriptions.map((subscription) => (
-              <TableRow key={subscription.id}>
-                <TableCell>
-                  {' '}
-                  <TextField label={subscription.name} disabled={true}>
-                    {' '}
-                  </TextField>
-                </TableCell>
-                <TableCell>
-                  <Link href={subscription.url} target="_blank">
-                    {subscription.url}
-                  </Link>
-                </TableCell>
-                <TableCell>{subscription.description}</TableCell>
-                <TableCell>
-                  <Chip label={subscription.category} clickable={true}></Chip>
-                </TableCell>
-                <TableCell>
-                  <ButtonGroup size="small">
-                    <Button onClick={() => handleModifySub(subscription.id)}>
-                      Modify
-                    </Button>
-                    <Button
-                      onClick={() => handleDeleteSub(subscription.id)}
-                      color="error"
-                      startIcon={<DeleteIcon />}
-                    >
-                      Delete
-                    </Button>
-                  </ButtonGroup>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Container>
+    <Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" sx={{ fontWeight: 600 }}>
+          Subscriptions
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleCreateClick}
+        >
+          Add Subscription
+        </Button>
+      </Box>
+
+      {subscriptions.length === 0 ? (
+        <EmptyState
+          title="No subscriptions yet"
+          description="Add your first RSS feed to start reading"
+          icon={<RssFeedIcon sx={{ fontSize: 80 }} />}
+          action={{
+            label: 'Add Subscription',
+            onClick: handleCreateClick,
+          }}
+        />
+      ) : (
+        <SubscriptionList
+          subscriptions={subscriptions}
+          onEdit={handleEditClick}
+          onDelete={handleDeleteClick}
+        />
+      )}
+
+      <SubscriptionForm
+        open={formOpen}
+        mode={formMode}
+        subscription={selectedSubscription}
+        onSubmit={handleFormSubmit}
+        onCancel={() => setFormOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete Subscription"
+        message={`Are you sure you want to delete "${subscriptionToDelete?.name}"? This action cannot be undone.`}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setSubscriptionToDelete(null);
+        }}
+        confirmText="Delete"
+        confirmColor="error"
+      />
+    </Box>
   );
 }

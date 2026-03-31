@@ -1,103 +1,100 @@
-import axios from 'axios';
-import { API_BASE_URL } from '../config/api.config';
+import { apiClient } from './api-client';
+import { handleApiError } from './error-handler';
+import {
+  Article,
+  ArticleFilter,
+  PaginationResponse,
+  UpdateArticleRequest,
+  BatchUpdateArticleRequest,
+  BatchUpdateResponse,
+  ServiceResult,
+} from '../types';
 
-interface ArticleResponse {
-  page: number;
-  perPage: number;
-  total: number;
-  data: Article[];
-  totalPages: number;
-}
+export const articleService = {
+  async getArticles(filter?: ArticleFilter): Promise<PaginationResponse<Article>> {
+    const params = new URLSearchParams();
+    
+    if (filter?.page) params.append('page', String(filter.page));
+    if (filter?.perPage) params.append('perPage', String(filter.perPage));
+    if (filter?.id) params.append('id', filter.id);
+    if (filter?.title) params.append('title', filter.title);
+    if (filter?.content) params.append('content', filter.content);
+    if (filter?.link) params.append('link', filter.link);
+    if (filter?.author) params.append('author', filter.author);
+    if (filter?.subscriptionId) params.append('subscriptionId', filter.subscriptionId);
+    if (filter?.isRead !== undefined) params.append('isRead', String(filter.isRead));
+    if (filter?.isFavorite !== undefined) params.append('isFavorite', String(filter.isFavorite));
 
-interface FeedResponse {
-  subscriptionId: string;
-  updatedAt: string;
-  articlesCount: number;
-}
+    const response = await apiClient.get<PaginationResponse<Article>>(
+      `/articles?${params.toString()}`
+    );
+    return response.data;
+  },
 
-interface BatchUpdateResponse {
-  updatedCount: number;
-  failedIds: string[];
-  message: string;
-}
+  async searchArticles(filter?: ArticleFilter): Promise<PaginationResponse<Article>> {
+    const params = new URLSearchParams();
+    
+    if (filter?.page) params.append('page', String(filter.page));
+    if (filter?.perPage) params.append('perPage', String(filter.perPage));
+    if (filter?.title) params.append('title', filter.title);
+    if (filter?.content) params.append('content', filter.content);
+    if (filter?.author) params.append('author', filter.author);
 
-interface Article {
-  id: string;
-  title: string;
-  content: string;
-  publishDate: string;
-  link: string;
-  author: string | null;
-  pubDate: string;
-  isRead: boolean;
-  isFavorite: boolean;
-  createdAt: string;
-  updatedAt: string;
-  subscription: {
-    id: string;
-    name: string;
-    url: string;
-    category: string;
-    description: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-}
+    const response = await apiClient.get<PaginationResponse<Article>>(
+      `/articles/search?${params.toString()}`
+    );
+    return response.data;
+  },
 
-export const getArticles = async (
-  page: number = 1,
-  perPage: number = 10,
-  filter = '',
-) => {
-  const filterParam = filter ? '&' + filter : '';
-  const response = await axios.get<ArticleResponse>(
-    `${API_BASE_URL}/articles?page=${page}&perPage=${perPage}` + filterParam,
-  );
-  return response.data;
-};
+  async getArticleById(id: string): Promise<Article> {
+    const response = await apiClient.get<Article>(`/articles/${id}`);
+    return response.data;
+  },
 
-export const refreshAllFeeds = async () => {
-  const response = await axios.patch<FeedResponse>(
-    `${API_BASE_URL}/feeds/update-all`,
-  );
-  return response.data;
-};
+  async updateArticle(id: string, data: UpdateArticleRequest): Promise<Article> {
+    const response = await apiClient.patch<Article>(`/articles/${id}`, data);
+    return response.data;
+  },
 
-export const cleanupAllFeeds = async () => {
-  const response = await axios.patch<FeedResponse>(
-    `${API_BASE_URL}/feeds/cleanup-all`,
-  );
-  return response.data;
-};
+  async batchUpdateArticles(data: BatchUpdateArticleRequest): Promise<BatchUpdateResponse> {
+    const response = await apiClient.patch<BatchUpdateResponse>(
+      '/articles/batch-update',
+      data
+    );
+    return response.data;
+  },
 
-export const changeReadStatus = async (article: Article) => {
-  const response = await axios.patch<Article>(
-    `${API_BASE_URL}/articles/${article.id}`,
-    {
-      isRead: !article.isRead,
-    },
-  );
-  return response.data;
-};
+  async toggleReadStatus(article: Article): Promise<ServiceResult<Article>> {
+    try {
+      const updated = await this.updateArticle(article.id, {
+        isRead: !article.isRead,
+      });
+      return { success: true, data: updated };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
 
-export const changeFavoriteStatus = async (article: Article) => {
-  const response = await axios.patch<Article>(
-    `${API_BASE_URL}/articles/${article.id}`,
-    {
-      isFavorite: !article.isFavorite,
-    },
-  );
-  return response.data;
-};
+  async toggleFavoriteStatus(article: Article): Promise<ServiceResult<Article>> {
+    try {
+      const updated = await this.updateArticle(article.id, {
+        isFavorite: !article.isFavorite,
+      });
+      return { success: true, data: updated };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
 
-export const markAllAsRead = async (articles: Article[]) => {
-  const articleIds = articles.map((article) => article.id);
-  const response = await axios.patch<BatchUpdateResponse>(
-    `${API_BASE_URL}/articles/batch-update`,
-    {
-      ids: articleIds,
-      isRead: true,
-    },
-  );
-  return response.data;
+  async markAllAsRead(articleIds: string[]): Promise<ServiceResult<BatchUpdateResponse>> {
+    try {
+      const result = await this.batchUpdateArticles({
+        ids: articleIds,
+        isRead: true,
+      });
+      return { success: true, data: result };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
 };
